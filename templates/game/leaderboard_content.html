@@ -1,0 +1,38 @@
+{% if leaderboard %}
+    <div class="matrix-background">
+        <div class="table-responsive matrix-font matrix-text">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in leaderboard %}
+                        <tr class="leaderboard-card">
+                            <td>
+                                <span class="{% if player.rank <= 3 %}rank-{{ player.rank }}{% endif %}">
+                                    <span class="cyber-icon">#</span>{{ player.rank }}
+                                </span>
+                            </td>
+                            <td>{{ player.username }}</td>
+                            <td>{{ player.score }} points</td>
+                            <td>
+                                {% if player.completed %}
+                                    <span class="cyber-icon">🏁</span> Finished
+                                {% else %}
+                                    <span class="cyber-icon">🏃</span> Playing
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <p class="text-center">No players have started the game yet.</p>
+{% endif %} 

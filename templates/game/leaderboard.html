@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}The Hunt Champions{% endblock %}
+
+{% block extra_css %}
+<style>
+    .leaderboard-container {
+        background: rgba(0, 0, 17, 0.8);
+        border: 2px solid var(--neon-cyan);
+        border-radius: 15px;
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+        margin: 2rem auto;
+        max-width: 1200px;
+    }
+
+    .leaderboard-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            linear-gradient(90deg, transparent 50%, rgba(0, 255, 255, 0.1) 50%),
+            linear-gradient(rgba(0, 255, 255, 0.1) 50%, transparent 50%);
+        background-size: 40px 40px;
+        animation: grid-move 20s linear infinite;
+        pointer-events: none;
+    }
+
+    @keyframes grid-move {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(40px); }
+    }
+
+    .cyber-glitch {
+        font-family: 'Audiowide', cursive;
+        font-size: 3rem;
+        color: var(--neon-cyan);
+        text-align: center;
+        margin-bottom: 2rem;
+        position: relative;
+        text-shadow: 0 0 10px var(--neon-cyan);
+        animation: glitch 5s infinite;
+    }
+
+    .player-card {
+        background: rgba(0, 0, 17, 0.6);
+        border: 1px solid var(--neon-cyan);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        display: flex;
+        align-items: center;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .player-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent 45%,
+            rgba(0, 255, 255, 0.1) 50%,
+            transparent 55%
+        );
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+
+    .player-card:hover::after {
+        transform: translateX(100%);
+    }
+
+    .rank-badge {
+        font-size: 2.5rem;
+        font-family: 'VT323', monospace;
+        margin-right: 2rem;
+        min-width: 60px;
+        text-align: center;
+    }
+
+    .rank-1 {
+        border-color: #FFD700;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    }
+
+    .rank-2 {
+        border-color: #C0C0C0;
+        box-shadow: 0 0 20px rgba(192, 192, 192, 0.3);
+    }
+
+    .rank-3 {
+        border-color: #CD7F32;
+        box-shadow: 0 0 20px rgba(205, 127, 50, 0.3);
+    }
+
+    .player-info {
+        flex-grow: 1;
+    }
+
+    .player-name {
+        font-size: 1.5rem;
+        color: var(--neon-magenta);
+        margin-bottom: 0.5rem;
+        text-shadow: 0 0 10px var(--neon-magenta);
+    }
+
+    .score-display {
+        display: flex;
+        align-items: baseline;
+        gap: 1rem;
+    }
+
+    .points-value {
+        font-family: 'VT323', monospace;
+        font-size: 2rem;
+        color: var(--electric-purple);
+        text-shadow: 0 0 10px var(--electric-purple);
+    }
+
+    .points-label {
+        font-size: 0.8rem;
+        color: var(--neon-cyan);
+        opacity: 0.8;
+    }
+
+    .cyber-button {
+        background: transparent;
+        border: 2px solid var(--neon-cyan);
+        color: var(--neon-cyan);
+        padding: 1rem 2rem;
+        font-family: 'VT323', monospace;
+        font-size: 1.5rem;
+        margin: 2rem auto;
+        display: block;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        outline: 1px solid var(--neon-cyan);
+        outline-offset: -4px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .cyber-button:hover {
+        background: var(--neon-cyan);
+        color: var(--dark-bg);
+        box-shadow: 0 0 20px var(--neon-cyan);
+        outline-offset: 4px;
+        outline-color: var(--neon-magenta);
+    }
+
+    .cyber-button__tag {
+        position: relative;
+        z-index: 1;
+    }
+
+    .cyber-button__tag::before {
+        content: '< ';
+        color: var(--neon-magenta);
+    }
+
+    .cyber-button__tag::after {
+        content: ' >';
+        color: var(--neon-magenta);
+    }
+    .no-players {
+        text-align: center;
+        padding: 2rem;
+        font-family: 'VT323', monospace;
+        font-size: 1.5rem;
+        color: var(--neon-cyan);
+    }
+
+    @keyframes glitch {
+        0% { transform: none; opacity: 1; }
+        7% { transform: skew(-0.5deg, -0.9deg); opacity: 0.75; }
+        10% { transform: none; opacity: 1; }
+        27% { transform: none; opacity: 1; }
+        30% { transform: skew(0.8deg, -0.1deg); opacity: 0.75; }
+        35% { transform: none; opacity: 1; }
+        52% { transform: none; opacity: 1; }
+        55% { transform: skew(-1deg, 0.2deg); opacity: 0.75; }
+        50% { transform: none; opacity: 1; }
+        72% { transform: none; opacity: 1; }
+        75% { transform: skew(0.4deg, 1deg); opacity: 0.75; }
+        80% { transform: none; opacity: 1; }
+        100% { transform: none; opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+    <h1 class="cyber-glitch">🏆 The Hunt Champions</h1>
+    
+    <div class="leaderboard-grid">
+        {% if players %}
+            {% for player in players %}
+                <div class="player-card {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% endif %}">
+                    <div class="rank-badge">{{ forloop.counter }}</div>
+                    <div class="player-info">
+                        <div class="player-name">{{ player.username }}</div>
+                        <div class="score-display">
+                            <span class="points-value">{{ player.points|default:"0" }}</span>
+                            <span class="points-label">POINTS</span>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-players">
+                <p>[ NO PLAYERS DETECTED IN THE SYSTEM ]</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <button class="cyber-button" onclick="location.reload()">
+        <span class="cyber-button__tag">Refresh</span>
+    </button>
+</div>
+{% endblock %}

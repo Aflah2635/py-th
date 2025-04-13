@@ -1,0 +1,53 @@
+:root {
+  --neon-blue: #00ffea;
+  --neon-purple: #ff00ff;
+  --neon-pink: #ff007f;
+  --matrix-green: #00ff00;
+  --dark-bg: #0a0a0a;
+}
+
+body {
+  background-color: var(--dark-bg);
+  color: var(--neon-blue);
+  font-family: 'Courier New', monospace;
+}
+
+.neon-glow {
+  text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+}
+
+.holographic {
+  background: linear-gradient(45deg, rgba(0, 255, 234, 0.1), rgba(255, 0, 255, 0.1), rgba(255, 0, 127, 0.1));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 234, 0.3);
+  animation: neon-background 10s linear infinite;
+}
+
+@keyframes neon-background {
+  0% { background-position: 0 0; }
+  100% { background-position: 100% 100%; }
+}
+
+.glow-button {
+  background-color: var(--neon-purple);
+  color: var(--dark-bg);
+  border: 2px solid var(--neon-pink);
+  box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+  transition: all 0.3s ease;
+}
+
+.glow-button:hover {
+  background-color: var(--neon-pink);
+  box-shadow: 0 0 20px var(--neon-pink), 0 0 40px var(--neon-pink);
+}
+
+.matrix-text {
+  color: var(--matrix-green);
+  text-shadow: 0 0 5px var(--matrix-green), 0 0 10px var(--matrix-green);
+}
+
+.cyber-icon {
+  font-size: 1.5em;
+  color: var(--neon-blue);
+  text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+}

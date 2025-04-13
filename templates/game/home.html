@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Play{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                {% if player.is_game_completed %}
+                    <h2 class="text-center mb-4">🎉 Congratulations! 🎉</h2>
+                    <p class="text-center">
+                        You've completed the treasure hunt with a score of {{ player.score }} points!<br>
+                        Your rank: #{{ player.calculate_rank }}
+                    </p>
+                    <div class="text-center">
+                        <a href="{% url 'leaderboard' %}" class="btn btn-primary">View Leaderboard</a>
+                    </div>
+                {% elif player.current_question %}
+                    <h2 class="mb-4">Question #{{ player.current_question.order }}</h2>
+                    <div class="question-content mb-4">
+                        {{ player.current_question.content|linebreaks }}
+                    </div>
+                    <form method="post" action="{% url 'submit_answer' %}">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <button type="submit" class="btn btn-primary">Submit Answer</button>
+                            <a href="{% url 'get_hint' player.current_question.id %}" class="btn btn-outline-primary">
+                                Get Hint
+                            </a>
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="text-center">No active questions available. Please check back later.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title">Your Progress</h3>
+                <p class="mb-2">Score: {{ player.score }} points</p>
+                <p class="mb-2">Questions Completed: {{ player.completed_questions.count }}</p>
+                <p class="mb-2">Current Rank: #{{ player.calculate_rank }}</p>
+                {% if player.hints_used.exists %}
+                    <h4 class="mt-4 h5">Hints Used:</h4>
+                    <ul class="list-unstyled">
+                        {% for hint in player.hints_used.all %}
+                            <li>Question #{{ hint.question.order }} (-{{ hint.penalty_points }} points)</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Prevent form resubmission on page refresh
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
+</script>
+{% endblock %} 

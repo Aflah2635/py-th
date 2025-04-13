@@ -1,0 +1,160 @@
+.dark-mode {
+  background-color: #1a202c;
+  color: #ffffff;
+}
+
+.dark-mode .bg-white {
+  background-color: #2d3748;
+}
+
+.dark-mode .text-gray-700 {
+  color: #cbd5e0;
+}
+
+.holographic {
+  background: linear-gradient(45deg, rgba(0, 255, 234, 0.1), rgba(255, 0, 255, 0.1), rgba(57, 255, 20, 0.1));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 234, 0.3);
+}
+
+.matrix-font {
+  font-family: 'Courier New', Courier, monospace;
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 15px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00, 0 0 40px #00ff00, 0 0 55px #00ff00, 0 0 75px #00ff00;
+}
+
+.matrix-background {
+  background: black;
+  overflow: hidden;
+  position: relative;
+}
+
+.matrix-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, transparent, black 50%, transparent);
+  animation: matrixBackground 5s linear infinite;
+}
+
+@keyframes matrixBackground {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100%;
+  }
+}
+
+.matrix-text {
+  position: relative;
+  z-index: 1;
+}
+
+.matrix-text span {
+  display: inline-block;
+  animation: matrixText 3s linear infinite;
+}
+
+@keyframes matrixText {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+.glitch-effect {
+  position: relative;
+  color: #00ff00;
+  font-size: 24px;
+  font-family: 'Courier New', Courier, monospace;
+  overflow: hidden;
+}
+
+.glitch-effect::before,
+.glitch-effect::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: black;
+  clip: rect(0, 0, 0, 0);
+  animation: glitch 1s infinite;
+}
+
+.glitch-effect::before {
+  color: #ff00ff;
+  animation-delay: 0.05s;
+}
+
+.glitch-effect::after {
+  color: #00ccff;
+  animation-delay: 0.1s;
+}
+
+@keyframes glitch {
+  0% {
+    clip: rect(0, 0, 0, 0);
+  }
+  20% {
+    clip: rect(20px, 999px, 40px, 0);
+  }
+  40% {
+    clip: rect(60px, 999px, 80px, 0);
+  }
+  60% {
+    clip: rect(100px, 999px, 120px, 0);
+  }
+  80% {
+    clip: rect(140px, 999px, 160px, 0);
+  }
+  100% {
+    clip: rect(0, 0, 0, 0);
+  }
+}
+
+.neon-button {
+  background-color: #1a202c;
+  border: none;
+  color: #00ff00;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: color 0.3s;
+}
+
+.neon-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #00ff00, #00ccff, #00ff00);
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(5px);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.neon-button:hover::before {
+  opacity: 1;
+}
+
+.neon-button:hover {
+  color: #ffffff;
+}

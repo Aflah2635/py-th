@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Register{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-requirements {
+        color: var(--neon-cyan);
+        font-size: 0.9rem;
+        text-shadow: 0 0 5px var(--neon-cyan);
+        margin-top: 0.25rem;
+        font-family: 'VT323', monospace;
+    }
+
+    .form-label {
+        color: var(--neon-magenta);
+        text-shadow: 0 0 5px var(--neon-magenta);
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .helptext {
+        color: var(--electric-purple);
+        text-shadow: 0 0 5px var(--electric-purple);
+        display: block;
+        margin-top: 0.5rem;
+        font-family: 'VT323', monospace;
+    }
+
+    .form-control {
+        background: rgba(0, 0, 17, 0.6);
+        border: 1px solid var(--neon-cyan);
+        color: var(--neon-cyan);
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-control:focus {
+        box-shadow: 0 0 15px var(--neon-cyan);
+        border-color: var(--neon-cyan);
+        background: rgba(0, 0, 17, 0.8);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="cyber-glitch text-center mb-4">Register for Treasure Hunt</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label class="form-label">{{ field.label }}{% if field.field.required %}*{% endif %}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="helptext">{{ field.help_text }}</small>
+                                {% endif %}
+                                {% if field.errors %}
+                                    {% for error in field.errors %}
+                                        <div class="form-requirements">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="cyber-button w-100">Register</button>
+                    </form>
+                    <p class="text-center mt-3">
+                        <span class="text-muted">Already have an account?</span>
+                        <a href="{% url 'login' %}" class="cyber-link">Login here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
