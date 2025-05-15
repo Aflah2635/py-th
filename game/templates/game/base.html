@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberpunk Treasure Hunt</title>
+    <style>
+        :root {
+            --primary: #00ffff;
+            --secondary: #ff00ff;
+            --accent: #ffff00;
+            --background: #000033;
+            --text: #00ffff;
+        }
+
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        body {
+            background-color: var(--background);
+            background-image: 
+                linear-gradient(45deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(-45deg, rgba(255, 0, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 0, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px, 50px 50px, 30px 30px;
+            animation: gridMove 20s linear infinite;
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .navbar {
+            background: rgba(22, 24, 29, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0.75rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            border-radius: 0 0 18px 18px;
+        }
+
+        .navbar .robot-icon {
+            width: 32px;
+            height: 32px;
+            fill: var(--primary);
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .navbar a:hover {
+            color: var(--primary);
+        }
+
+        .navbar a.active {
+            color: var(--primary);
+        }
+
+        .navbar a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 1rem auto;
+            padding: 0 1rem;
+            flex: 1;
+        }
+
+        .card {
+            background-color: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: holographic 3s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes holographic {
+            0% { transform: rotate(45deg) translateY(-100%); }
+            100% { transform: rotate(45deg) translateY(100%); }
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-primary), var(--glow-secondary);
+        }
+
+        .btn {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-size: 16px;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: var(--primary);
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            transition: width 0.6s ease, height 0.6s ease;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .btn:hover::before {
+            width: 200%;
+            height: 200%;
+        }
+
+        .btn:hover {
+            background-color: var(--primary);
+            color: var(--background);
+        }
+
+        .btn-secondary {
+            color: var(--secondary);
+            border-color: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--secondary);
+            color: var(--background);
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--primary);
+            color: var(--text);
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 400px;
+            font-size: 16px;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        @keyframes neonPulse {
+            0% { box-shadow: var(--glow-primary); }
+            50% { box-shadow: 0 0 5px var(--primary), 0 0 10px var(--primary); }
+            100% { box-shadow: var(--glow-primary); }
+        }
+
+        @keyframes textGlow {
+            0% { text-shadow: 0 0 5px var(--primary); }
+            50% { text-shadow: 0 0 10px var(--primary), 0 0 20px var(--secondary); }
+            100% { text-shadow: 0 0 5px var(--primary); }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+            
+            .navbar {
+                padding: 0.75rem;
+            }
+            
+            .navbar a {
+                margin: 0.25rem;
+                flex: 1 1 auto;
+            }
+            
+            .container {
+                margin: 0.5rem auto;
+                padding: 0 0.5rem;
+            }
+            
+            .card {
+                padding: 1rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar a {
+                min-width: 100%;
+            }
+            
+            input[type="text"],
+            input[type="password"] {
+                font-size: 14px;
+            }
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--secondary);
+            position: relative;
+        }
+
+        h1:hover, h2:hover, h3:hover, h4:hover, h5:hover, h6:hover {
+            animation: glitch 0.3s infinite;
+        }
+
+        .messages {
+            list-style: none;
+            padding: 0;
+        }
+
+        .messages li {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            border-left: 4px solid var(--primary);
+            background-color: rgba(0, 255, 255, 0.1);
+            text-align: center;
+            font-size: 1.1em;
+            animation: textGlow 2s infinite;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-top: 2px solid var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <svg class="robot-icon" viewBox="0 0 24 24">
+            <path d="M12 2a2 2 0 012 2v2h3a3 3 0 013 3v9a3 3 0 01-3 3H7a3 3 0 01-3-3v-9a3 3 0 013-3h3V4a2 2 0 012-2zm0 4H7a1 1 0 00-1 1v9a1 1 0 001 1h10a1 1 0 001-1v-9a1 1 0 00-1-1h-5zm-1 6a1 1 0 110-2 1 1 0 010 2zm4 0a1 1 0 110-2 1 1 0 010 2zm-2 3a3 3 0 01-2.12-.88.5.5 0 01.71-.71 2 2 0 002.82 0 .5.5 0 01.71.71A3 3 0 0113 15z"/>
+        </svg>
+        {% if user.is_authenticated %}
+            <a href="{% url 'game:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+            <a href="{% url 'game:game_interface' %}" class="{% if request.resolver_match.url_name == 'game_interface' %}active{% endif %}">My Progress</a>
+            <a href="{% url 'game:leaderboard' %}" class="{% if request.resolver_match.url_name == 'leaderboard' %}active{% endif %}">Leaderboard</a>
+            <!-- <a href="#" class="{% if request.resolver_match.url_name == 'achievements' %}active{% endif %}">Achievements</a>
+            <a href="#" class="{% if request.resolver_match.url_name == 'help' %}active{% endif %}">Help</a> -->
+            {% if user.is_staff %}
+            <a href="{% url 'admin:index' %}" class="{% if request.resolver_match.url_name == 'admin:index' %}active{% endif %}">Admin Panel</a>
+            {% endif %}
+            <a href="{% url 'game:logout' %}" class="{% if request.resolver_match.url_name == 'logout' %}active{% endif %}">Logout</a>
+            <!-- <a href="#" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">Profile</a> -->
+        {% else %}
+            <a href="{% url 'game:login' %}">Login</a>
+            <a href="{% url 'game:register' %}">Register</a>
+        {% endif %}
+    </nav>
+
+    <div class="container">
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Cyberpunk Treasure Hunt. All rights reserved.</p>
+    </footer>
+</body>
+</html>

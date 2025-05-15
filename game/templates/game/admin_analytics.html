@@ -1,0 +1,291 @@
+{% extends 'game/base.html' %}
+
+{% block content %}
+<div class="container">
+    {% if user.is_staff %}
+    <div class="analytics-header">
+        <h1>Game Analytics Dashboard</h1>
+        <div class="live-stats">
+            <div class="stat-card">
+                <h3>🎮 Active Players</h3>
+                <p id="active-players-count">{{ active_players_count }}</p>
+                <small>in the last 30 minutes</small>
+            </div>
+            <div class="stat-card">
+                <h3>⚡ Total Clues</h3>
+                <p>{{ clue_stats|length }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="analytics-grid">
+        <!-- Clue Performance Stats -->
+        <div class="card">
+            <h2>🧩 Clue Performance</h2>
+            <div class="chart-container">
+                <canvas id="solveRateChart"></canvas>
+            </div>
+            <div class="table-wrapper">
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Clue</th>
+                            <th>Solved Rate</th>
+                            <th>Avg. Time</th>
+                            <th>Hint Usage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in clue_stats %}
+                        <tr>
+                            <td>{{ stat.title }}</td>
+                            <td>{{ stat.solve_rate }}%</td>
+                            <td>{{ stat.avg_time }}</td>
+                            <td>{{ stat.hint_usage }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Player Behavior Stats -->
+        <div class="card">
+            <h2>🧠 Player Behavior</h2>
+            <div class="chart-container">
+                <canvas id="dropoffChart"></canvas>
+            </div>
+            <div class="fastest-solvers">
+                <h3>Fastest Solvers</h3>
+                <div class="table-wrapper">
+                    <table class="analytics-table">
+                        <thead>
+                            <tr>
+                                <th>Clue</th>
+                                <th>Player</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in fastest_solvers %}
+                            <tr>
+                                <td>{{ record.clue }}</td>
+                                <td>{{ record.player }}</td>
+                                <td>{{ record.time }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Metrics -->
+        <div class="card">
+            <h2>🔴 Live Activity</h2>
+            <div class="chart-container">
+                <canvas id="activityHeatmap"></canvas>
+            </div>
+            <div class="current-activity">
+                <h3>Currently Active Clues</h3>
+                <div id="active-clues-list">
+                    {% for clue in active_clues %}
+                    <div class="active-clue-item">
+                        <span class="clue-name">{{ clue.title }}</span>
+                        <span class="active-count">{{ clue.active_players }} players</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .analytics-header {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .live-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .analytics-table th,
+        .analytics-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+        }
+
+        .analytics-table th {
+            background: rgba(0, 255, 255, 0.1);
+            font-weight: 600;
+        }
+
+        .stat-card {
+            background: rgba(0, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: rgba(0, 255, 255, 0.8);
+        }
+
+        .stat-card p {
+            margin: 0.5rem 0;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .stat-card small {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .active-clue-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(0, 255, 255, 0.05);
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            transition: background 0.2s;
+        }
+
+        .active-clue-item:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            color: rgba(0, 255, 255, 0.8);
+            font-size: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .stat-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+    {% else %}
+    <div class="card">
+        <h2>Access Denied</h2>
+        <p>You do not have permission to view this page.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize charts when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Solve Rate Chart
+        const solveRateCtx = document.getElementById('solveRateChart').getContext('2d');
+        new Chart(solveRateCtx, {
+            type: 'bar',
+            data: {{ solve_rate_data|safe }},
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Solve Rate per Clue'
+                    }
+                }
+            }
+        });
+
+        // Dropoff Chart
+        const dropoffCtx = document.getElementById('dropoffChart').getContext('2d');
+        new Chart(dropoffCtx, {
+            type: 'line',
+            data: {{ dropoff_data|safe }},
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Player Dropoff Points'
+                    }
+                }
+            }
+        });
+
+        // Activity Heatmap
+        const heatmapCtx = document.getElementById('activityHeatmap').getContext('2d');
+        new Chart(heatmapCtx, {
+            type: 'bubble',
+            data: {{ activity_data|safe }},
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Activity Heatmap'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

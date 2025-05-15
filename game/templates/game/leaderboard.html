@@ -1,0 +1,289 @@
+{% extends 'game/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<script src="{% static 'js/leaderboard.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="cyber-title text-center">
+            <span class="glow">Global Leaderboard</span>
+            <div class="subtitle">Top Cyber Hunters</div>
+        </h2>
+        {% if user.is_staff %}
+        <div class="flex items-center space-x-4">
+            <!-- <label class="switch">
+                <input type="checkbox" id="visibility-toggle" {% if leaderboard_visible %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+            <span class="text-sm text-gray-400">Public Visibility</span> -->
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- <div class="sort-controls flex space-x-4 mb-4">
+        <button class="sort-control" data-column="score">Score</button>
+        <button class="sort-control" data-column="accuracy">Accuracy</button>
+        <button class="sort-control" data-column="progress">Progress</button>
+        <button class="sort-control" data-column="time">Time</button>
+    </div> -->
+
+    <div id="leaderboard-container" class="leaderboard-container">
+        {% if top_players %}
+            {% for player in top_players %}
+            <div class="leaderboard-entry rank-{{ forloop.counter }}" data-player-id="{{ player.user.id }}">
+                <div class="rank-info">
+                    <div class="rank-badge">{{ forloop.counter }}</div>
+                    <div class="player-info">
+                        <div class="username">
+                            {% if forloop.counter <= 3 %}
+                            <div class="crown rank-{{ forloop.counter }}"></div>
+                            {% endif %}
+                            {{ player.user.username }}
+                        </div>
+                        {% if player.finish_time %}
+                        <div class="status">Mission Complete</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Score</span>
+                        <span class="stat-value">{{ player.score }} pts</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Progress</span>
+                        <span class="stat-value">{{ player.completed_questions.count }}/{{ total_questions }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Hints Used</span>
+                        <span class="stat-value">{{ player.total_hints_used }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Accuracy</span>
+                        <span class="stat-value">{{ player.accuracy }}%</span>
+                    </div>
+                    {% if player.finish_time %}
+                    <div class="stat-item col-span-2">
+                        <span class="stat-label">Time</span>
+                        <span class="stat-value">{{ player.finish_time|timeuntil:player.start_time }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>No scores recorded yet. Be the first to make your mark!</p>
+            </div>
+        {% endif %}
+    </div>
+
+
+</div>
+
+<style>
+    .cyber-title {
+        color: var(--secondary);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .cyber-title .glow {
+        text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
+    }
+
+    .subtitle {
+        font-size: 0.8em;
+        color: var(--primary);
+        margin-top: 0.5rem;
+        opacity: 0.8;
+    }
+
+    .leaderboard-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .leaderboard-entry {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: rgba(0, 255, 255, 0.05);
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    .leaderboard-entry:hover {
+        transform: translateX(5px);
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+    }
+
+    .leaderboard-entry::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 4px;
+    }
+
+    .rank-1::before { background: #ffd700; box-shadow: 0 0 10px #ffd700; }
+    .rank-2::before { background: #c0c0c0; box-shadow: 0 0 10px #c0c0c0; }
+    .rank-3::before { background: #cd7f32; box-shadow: 0 0 10px #cd7f32; }
+    .rank-1 { background: rgba(255, 215, 0, 0.1); }
+    .rank-2 { background: rgba(192, 192, 192, 0.1); }
+    .rank-3 { background: rgba(205, 127, 50, 0.1); }
+
+    .rank-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .rank-badge {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-radius: 50%;
+        background: rgba(0, 255, 255, 0.1);
+        color: var(--primary);
+    }
+
+    .rank-1 .rank-badge { color: #ffd700; text-shadow: 0 0 5px #ffd700; }
+    .rank-2 .rank-badge { color: #c0c0c0; text-shadow: 0 0 5px #c0c0c0; }
+    .rank-3 .rank-badge { color: #cd7f32; text-shadow: 0 0 5px #cd7f32; }
+
+    .player-info .username {
+        font-size: 1.1rem;
+        color: var(--secondary);
+    }
+
+    .player-info .status {
+        font-size: 0.8rem;
+        color: var(--primary);
+        opacity: 0.8;
+    }
+
+    .score-info {
+        text-align: right;
+    }
+
+    .score-info .score {
+        font-size: 1.2rem;
+        color: var(--primary);
+        text-shadow: 0 0 5px var(--primary);
+    }
+
+    .score-info .time {
+        font-size: 0.8rem;
+        color: var(--secondary);
+        opacity: 0.8;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--secondary);
+        background: rgba(0, 255, 255, 0.05);
+        border-radius: 8px;
+    }
+
+    .action-buttons {
+        text-align: center;
+        margin-top: 2rem;
+    }
+
+    .cyber-btn {
+        background: rgba(0, 255, 255, 0.1);
+        color: var(--primary);
+        padding: 0.8rem 1.5rem;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        border: 1px solid var(--primary);
+    }
+
+    .cyber-btn:hover {
+        background: var(--primary);
+        color: black;
+        box-shadow: 0 0 15px var(--primary);
+    }
+
+    @keyframes slideIn {
+        from { 
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+</style>
+
+<script>
+    const leaderboardSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/game/leaderboard/'
+    );
+
+    leaderboardSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        if (data.type === 'leaderboard_update') {
+            updateLeaderboard(data.leaderboard);
+        }
+    };
+
+    leaderboardSocket.onclose = function(e) {
+        console.error('Leaderboard socket closed unexpectedly');
+    };
+
+    function updateLeaderboard(leaderboard) {
+        const container = document.getElementById('leaderboard-container');
+        let html = '';
+
+        if (leaderboard.length > 0) {
+            leaderboard.forEach((player, index) => {
+                const rank = index + 1;
+                html += `
+                    <div class="leaderboard-entry rank-${rank}">
+                        <div class="rank-info">
+                            <div class="rank-badge">${rank}</div>
+                            <div class="player-info">
+                                <div class="username">${player.username}</div>
+                                ${player.completed ? '<div class="status">Mission Complete</div>' : ''}
+                            </div>
+                        </div>
+                        <div class="score-info">
+                            <div class="score">${player.score} pts</div>
+                            ${player.duration ? `<div class="time">Time: ${player.duration}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            html = `
+                <div class="empty-state">
+                    <p>No scores recorded yet. Be the first to make your mark!</p>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+    }
+</script>
+{% endblock %}

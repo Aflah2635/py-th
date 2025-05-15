@@ -1,0 +1,66 @@
+{% extends 'game/base.html' %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 2rem auto;">
+    <h2 style="color: var(--secondary); text-align: center;">Create New Account</h2>
+    
+    <form method="post" style="margin-top: 2rem;">
+        {% csrf_token %}
+        {% for field in form %}
+        <div style="margin-bottom: 1rem;">
+            <label for="{{ field.id_for_label }}" style="display: block; margin-bottom: 0.5rem; color: var(--primary);">
+                {{ field.label }}
+            </label>
+            {{ field }}
+            {% if field.help_text %}
+            <small style="display: block; color: var(--secondary); margin-top: 0.25rem;">
+                {{ field.help_text }}
+            </small>
+            {% endif %}
+            {% for error in field.errors %}
+            <small style="display: block; color: #ff0000; margin-top: 0.25rem;">
+                {{ error }}
+            </small>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        
+        <div style="text-align: center;">
+            <button type="submit" class="btn" style="width: 100%; font-size: 1.1rem;">Register</button>
+        </div>
+    </form>
+    
+    <div style="text-align: center; margin-top: 1.5rem;">
+        <p>Already have an account?</p>
+        <a href="{% url 'game:login' %}" class="btn btn-secondary">Login Here</a>
+    </div>
+</div>
+
+<style>
+    /* Style Django form fields to match our theme */
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        font-size: 1rem;
+        background-color: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--primary);
+        color: var(--text);
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        box-shadow: 0 0 5px var(--primary);
+    }
+
+    ul.errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        color: #ff0000;
+    }
+</style>
+{% endblock %}
