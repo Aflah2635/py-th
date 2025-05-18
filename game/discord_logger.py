@@ -2,6 +2,7 @@ import os
 import aiohttp
 from datetime import datetime
 from .discord_config import DiscordChannels, DiscordColors, DiscordEmbedTitles
+import logging
 
 class DiscordLogger:
     def __init__(self):
@@ -17,19 +18,25 @@ class DiscordLogger:
     async def _send_webhook(self, channel: str, embed: dict) -> bool:
         webhook_url = self.webhook_urls.get(channel)
         if not webhook_url:
+            logging.error(f"No webhook URL found for channel: {channel}")
             return False
 
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(webhook_url, json={'embeds': [embed]}) as response:
+                    if response.status != 204:
+                        logging.error(f"Discord webhook failed with status {response.status}")
+                        response_text = await response.text()
+                        logging.error(f"Response: {response_text}")
                     return response.status == 204
-        except Exception:
+        except Exception as e:
+            logging.error(f"Error sending Discord webhook: {str(e)}")
             return False
 
     def _create_base_embed(self, title: str, color: int) -> dict:
         return {
-            'title': title,
-            'color': color,
+            'title': title.value if hasattr(title, 'value') else str(title),  # Handle both enum and string
+            'color': color.value if hasattr(color, 'value') else color,  # Handle both enum and string
             'timestamp': datetime.utcnow().isoformat()
         }
 

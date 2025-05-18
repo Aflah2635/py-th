@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'game.middleware.ContentSecurityPolicyMiddleware',
+    'game.middleware.MobileDeviceMiddleware',
 ]
 
 ROOT_URLCONF = 'treasure_hunt.urls'

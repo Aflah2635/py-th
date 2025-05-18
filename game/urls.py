@@ -14,4 +14,8 @@ urlpatterns = [
     path('leaderboard/', views.leaderboard, name='leaderboard'),
     path('submit_answer/', views.submit_answer, name='submit_answer'),
     path('get_hint/', views.get_hint, name='get_hint'),
+    path('help/', views.help_view, name='help'),
+    path('.well-known/appspecific/com.chrome.devtools.json', views.chrome_devtools_stub, name='chrome_devtools'),
+    path('test-webhook/', views.test_discord_webhook, name='test-webhook'),
 ]
+path('logout/', views.logout_view, name='logout'),

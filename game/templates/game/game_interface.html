@@ -223,54 +223,69 @@
 </div>
 
 <script>
-document.getElementById('answer-form').addEventListener('submit', function(e) {
+document.getElementById('answer-form').addEventListener('submit', async function(e) {
     e.preventDefault();
+    
     const form = this;
     const formData = new FormData(form);
     
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        credentials: 'same-origin'
-    })
-    .then(response => response.json())
-    .then(data => {
-        const form = document.getElementById('answer-form');
-        if (data.success) {
-            form.classList.add('success-glow');
-            setTimeout(() => {
-                const questionCard = document.querySelector('.question-card');
-                questionCard.classList.add('fade-out');
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.correct) {
+            // Show success message
+            showMessage('Correct answer!', 'success');
+            
+            // If there's a next question, refresh the page after a short delay
+            if (data.next_question) {
                 setTimeout(() => {
-                    alert(`Correct! You earned ${data.points} points!`);
-                    if (data.completed) {
-                        window.location.href = data.redirect_url;
-                    } else {
-                        const newCard = document.createElement('div');
-                        newCard.className = 'question-card fade-in';
-                        questionCard.parentNode.appendChild(newCard);
-                        location.reload();
-                    }
-                }, 500);
-            }, 1000);
+                    window.location.reload();
+                }, 1500);
+            } else {
+                // If no next question, redirect to leaderboard
+                window.location.href = "{% url 'game:leaderboard' %}";
+            }
         } else {
-            form.classList.add('error-glow');
-            setTimeout(() => {
-                form.classList.remove('error-glow');
-                alert('Incorrect answer. Try again!');
-            }, 1000);
+            // Show error message without refreshing
+            showMessage(data.message, 'error');
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred while submitting your answer. Please try again.');
-    });
+        showMessage('An error occurred. Please try again.', 'error');
+    }
 });
 
+function showMessage(message, type) {
+    const messageElement = document.createElement('div');
+    messageElement.textContent = message;
+    messageElement.className = `message ${type}-message`;
+    messageElement.style.padding = '1rem';
+    messageElement.style.marginTop = '1rem';
+    messageElement.style.borderRadius = '4px';
+    messageElement.style.textAlign = 'center';
+    messageElement.style.animation = type === 'success' ? 'successGlow 2s infinite' : 'errorGlow 2s infinite';
+    
+    // Remove any existing messages
+    const existingMessages = document.querySelectorAll('.message');
+    existingMessages.forEach(msg => msg.remove());
+    
+    // Add the new message after the form
+    const form = document.getElementById('answer-form');
+    form.parentNode.insertBefore(messageElement, form.nextSibling);
+    
+    // Remove the message after 3 seconds
+    setTimeout(() => {
+        messageElement.remove();
+    }, 3000);
+}
 document.getElementById('hint-btn').addEventListener('click', function() {
     const hintBtn = this;
     hintBtn.disabled = true;

@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse  # Add HttpResponse here
 from django.db.models import Max, Count, Avg, F
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
@@ -13,6 +13,7 @@ from django.utils import timezone
 from .forms import CustomUserCreationForm, AnswerForm
 import json
 from datetime import timedelta
+import logging
 
 @login_required
 def dashboard(request):
@@ -28,9 +29,13 @@ def dashboard(request):
     rank = PlayerProgress.objects.filter(score__gt=player_progress.score).count() + 1
     player_progress.rank = rank
 
+    # Get total number of questions
+    total_questions = Question.objects.filter(is_active=True).count()
+    
     context = {
         'player_progress': player_progress,
         'question_progress': question_progress,
+        'total_questions': total_questions,  # Add this line
         'submission_history': submission_history,
     }
     return render(request, 'game/dashboard.html', context)
@@ -144,21 +149,25 @@ async def register(request):
             user = form.save()
             PlayerProgress.objects.create(user=user)
             login(request, user)
-            await discord_logger.log_user_activity(user.username, 'register')
+            await discord_logger.log_user_activity(user.username, 'register')  # This is already correct
             return redirect('game:game_interface')
     else:
         form = CustomUserCreationForm()
     return render(request, 'game/register.html', {'form': form})
 
-def login_view(request):
+async def login_view(request):
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
+        # Wrap authenticate in sync_to_async
+        user = await sync_to_async(authenticate)(request, username=username, password=password)
         if user is not None:
-            login(request, user)
-            # Create PlayerProgress if it doesn't exist
-            PlayerProgress.objects.get_or_create(user=user)
+            # Wrap login in sync_to_async
+            await sync_to_async(login)(request, user)
+            # Wrap get_or_create in sync_to_async
+            await sync_to_async(PlayerProgress.objects.get_or_create)(user=user)
+            # Log the login activity
+            await discord_logger.log_user_activity(user.username, 'login')
             return redirect('game:game_interface')
     return render(request, 'game/login.html')
 
@@ -193,99 +202,110 @@ async def game_interface(request):
 
 @login_required
 async def submit_answer(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
-
-    try:
+    if request.method == 'POST':
         form = AnswerForm(request.POST)
-        if not form.is_valid():
-            return JsonResponse({
-                'error': 'Invalid answer format',
-                'details': form.errors.get('answer', ['Please provide a valid answer'])[0]
-            }, status=400)
+        if form.is_valid():
+            answer = form.cleaned_data['answer']
+            progress = await sync_to_async(PlayerProgress.objects.get)(user=request.user)
+            current_question = await sync_to_async(lambda: progress.current_question)()
             
-        # Get cleaned answer from the form
-        normalized_answer = form.cleaned_data['answer']  # Already cleaned by form's clean_answer method
-        progress = await sync_to_async(PlayerProgress.objects.get)(user=request.user)
-        question = progress.current_question
-        
-        if not question:
-            return JsonResponse({'error': 'No current question'}, status=400)
-        
-        # Create a form for the question's answer and clean it
-        question_form = AnswerForm({'answer': question.answer})
-        if not question_form.is_valid():
-            return JsonResponse({'error': 'Invalid question configuration'}, status=500)
+            if not current_question:
+                return JsonResponse({'error': 'No current question'}, status=400)
             
-        normalized_question_answer = question_form.cleaned_data['answer']  # Use form's cleaning
-        is_correct = normalized_answer == normalized_question_answer
-        await sync_to_async(SubmissionHistory.objects.create)(
-            player=progress.user,
-            question=question,
-            submitted_answer=normalized_answer,
-            is_correct=is_correct
-        )
-        
-        if is_correct:
-            # Update QuestionProgress
-            question_progress = await sync_to_async(QuestionProgress.objects.get)(player=progress, question=question)
-            question_progress.completion_time = timezone.now()
-            question_progress.score_earned = question.points
-            await sync_to_async(question_progress.save)()
+            # Get or create QuestionProgress
+            question_progress = await sync_to_async(QuestionProgress.objects.get_or_create)(
+                player=progress,
+                question=current_question
+            )
+            question_progress = question_progress[0]  # get_or_create returns a tuple
             
-            # Update PlayerProgress
-            progress.score += question.points
-            await sync_to_async(progress.completed_questions.add)(question)
-            progress.total_time_spent = await sync_to_async(lambda: sum(
-                (qp.time_taken for qp in QuestionProgress.objects.filter(player=progress) if qp.time_taken),
-                timezone.timedelta()
-            ))()
+            # Create submission history
+            is_correct = answer.lower().strip() == current_question.answer.lower().strip()
+            await sync_to_async(SubmissionHistory.objects.create)(
+                player=request.user,
+                question=current_question,
+                submitted_answer=answer,
+                is_correct=is_correct
+            )
             
-            next_question = await sync_to_async(Question.objects.filter(
-                is_active=True,
-                order__gt=question.order
-            ).first)()
-            
-            if next_question:
-                progress.current_question = next_question
+            if is_correct:
+                # Update question progress
+                question_progress.completion_time = timezone.now()
+                question_progress.score_earned = current_question.points
+                await sync_to_async(question_progress.save)()
+                
+                # Update player progress
+                progress.score += current_question.points
+                await sync_to_async(progress.completed_questions.add)(current_question)
+                
+                # Get next question
+                next_question = await sync_to_async(
+                    Question.objects.filter(order__gt=current_question.order, is_active=True).order_by('order').first
+                )()
+                
+                if next_question:
+                    progress.current_question = next_question
+                    # Create QuestionProgress for next question
+                    await sync_to_async(QuestionProgress.objects.create)(
+                        player=progress,
+                        question=next_question
+                    )
+                else:
+                    progress.finish_time = timezone.now()
+                    progress.total_time_spent = progress.finish_time - progress.start_time
+                    # Log completion when player finishes all questions
+                    await discord_logger.log_hunt_completion(
+                        request.user.username,
+                        progress.total_time_spent.total_seconds(),
+                        progress.total_hints_used
+                    )
+                
                 await sync_to_async(progress.save)()
-                # Create QuestionProgress for the next question
-                await sync_to_async(QuestionProgress.objects.create)(
-                    player=progress,
-                    question=next_question
+                
+                # Log the success
+                await discord_logger.log_clue_solved(
+                    request.user.username,
+                    current_question.order,
+                    question_progress.time_taken.total_seconds() if question_progress.time_taken else 0
                 )
-                await discord_logger.log_game_progress(request.user.username, next_question.order, progress.score)
-                return JsonResponse({'success': True, 'points': question.points})
-            else:
-                # No more questions - game completed
-                progress.current_question = None
-                progress.finish_time = timezone.now()
-                await sync_to_async(progress.save)()
-                await discord_logger.log_high_score(request.user.username, progress.score)
+                
                 return JsonResponse({
-                    'success': True,
-                    'points': question.points,
-                    'completed': True,
-                    'redirect_url': reverse('game:leaderboard')
+                    'correct': True,
+                    'message': 'Correct answer!',
+                    'next_question': bool(next_question),
+                    'score': progress.score
                 })
-        
-        return JsonResponse({'success': False})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+            
+            # Log wrong answer
+            await discord_logger.log_wrong_answer(request.user.username, current_question.order, answer)
+            
+            return JsonResponse({
+                'correct': False,
+                'message': 'Incorrect answer. Try again!'
+            })
+            
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @login_required
 async def get_hint(request):
     if request.method == 'POST':
         progress = await sync_to_async(PlayerProgress.objects.get)(user=request.user)
-        question = progress.current_question
+        # Use sync_to_async for accessing the related field
+        current_question = await sync_to_async(lambda: progress.current_question)()
         
-        if not question:
+        if not current_question:
             return JsonResponse({'error': 'No current question'}, status=400)
         
-        hint = await sync_to_async(Hint.objects.filter(question=question).first)()
+        # Use sync_to_async for all database operations
+        hint = await sync_to_async(lambda: Hint.objects.filter(question=current_question).first())()
         if hint:
-            # Create HintUsage record
-            question_progress = await sync_to_async(QuestionProgress.objects.get)(player=progress, question=question)
+            # Get question progress using sync_to_async
+            question_progress = await sync_to_async(QuestionProgress.objects.get)(
+                player=progress, 
+                question=current_question
+            )
+            
+            # Create hint usage with sync_to_async
             await sync_to_async(HintUsage.objects.create)(
                 question_progress=question_progress,
                 hint=hint,
@@ -297,6 +317,13 @@ async def get_hint(request):
             progress.total_hints_used += 1
             await sync_to_async(progress.save)()
             
+            # Log the hint usage
+            await discord_logger.log_hint_used(
+                request.user.username,
+                current_question.order,
+                hint.number if hasattr(hint, 'number') else 1
+            )
+            
             return JsonResponse({
                 'hint': hint.content,
                 'penalty': hint.penalty_points
@@ -306,11 +333,65 @@ async def get_hint(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @login_required
+def help_view(request):
+    return render(request, 'game/help.html')
+
+@login_required
+async def chrome_devtools_stub(request):
+    return JsonResponse({}, status=200)
+
 def leaderboard(request):
     top_players = PlayerProgress.objects.order_by('-score')[:10]
     context = {'top_players': top_players}
     return render(request, 'game/leaderboard.html', context)
 
-def logout_view(request):
-    logout(request)
-    return redirect('game:home')
+@login_required
+async def logout_view(request):
+    try:
+        # Get username before logout since we need it for logging
+        username = await sync_to_async(lambda: request.user.username)()
+        
+        # Use sync_to_async for logout
+        await sync_to_async(logout)(request)
+        
+        # Log the logout activity
+        await discord_logger.log_user_activity(username, 'logout')
+        
+        return redirect('game:home')
+    except Exception as e:
+        logging.error(f"Error during logout: {str(e)}")
+        return redirect('game:home')
+
+
+# Configure logging
+logging.basicConfig(
+    level=logging.ERROR,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Add this to any view function where you want to test
+async def test_discord_webhook(request):
+    try:
+        # Test user activity logging
+        success = await discord_logger.log_user_activity("test_user", "login")
+        if not success:
+            logging.error("Failed to send Discord webhook for user activity")
+            return HttpResponse("Webhook test failed - check logs")
+
+        # Test clue solved logging
+        success = await discord_logger.log_clue_solved("test_user", 1, 60.5)
+        if not success:
+            logging.error("Failed to send Discord webhook for clue solved")
+            return HttpResponse("Webhook test failed - check logs")
+
+        # Test hint used logging
+        success = await discord_logger.log_hint_used("test_user", 1, 1)
+        if not success:
+            logging.error("Failed to send Discord webhook for hint used")
+            return HttpResponse("Webhook test failed - check logs")
+
+        return HttpResponse("Webhook tests completed - check Discord channels")
+        
+    except Exception as e:
+        logging.error(f"Error during webhook test: {str(e)}")
+        return HttpResponse(f"Error during test: {str(e)}")
