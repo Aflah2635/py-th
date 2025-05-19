@@ -22,17 +22,33 @@ A web-based treasure hunt game built with Django, featuring real-time Discord in
 ## Installation
 
 1. Clone the repository
+```bash
+git clone https://github.com/Aflah2635/py-th.git
+```
 2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+3. Fill .env file:
+   ```bash
+   # Django Settings
+DJANGO_SECRET_KEY=
+DEBUG=True
+ALLOWED_HOSTS=*
 
-3. Apply migrations:
+# Discord Webhooks
+DISCORD_CLUE_WEBHOOK=
+DISCORD_HINT_WEBHOOK=
+DISCORD_USER_WEBHOOK=
+DISCORD_WRONG_ANSWER_WEBHOOK=
+DISCORD_COMPLETION_WEBHOOK=
+   ```
+4. Apply migrations:
    ```bash
    python manage.py migrate
    ```
 
-4. Run the development server:
+5. Run the development server:
    ```bash
    python manage.py runserver
    ```
