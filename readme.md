@@ -22,13 +22,13 @@ A web-based treasure hunt game built with Django, featuring real-time Discord in
 ## Installation
 
 1. Clone the repository
-```bash
+   ```bash
    git clone https://github.com/Aflah2635/py-th.git
-```
+   ```
 2. Install dependencies:
-```bash
+  ```bash
    pip install -r requirements.txt
-```
+   ```
 3. Fill .env file:
    ```bash
    DJANGO_SECRET_KEY=
