@@ -1,0 +1,658 @@
+{% extends 'game/base.html' %}
+
+{% block content %}
+<div class="analytics-container">
+    {% if user.is_staff %}
+    <div class="analytics-header">
+        <h1>Game Analytics Dashboard</h1>
+        <p class="last-update">Last updated: {% now "F j, Y H:i" %}</p>
+    </div>
+    
+    <div class="analytics-grid">
+        <!-- Solved Rate Card -->
+        <div class="analytics-card" data-aos="fade-up">
+            <div class="card-header">
+                <h2>Solved Rate per Clue</h2>
+                <div class="card-actions">
+                    <button class="refresh-btn" onclick="refreshChart('solveRateChart')">
+                        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="solveRateChart"></canvas>
+            </div>
+            <div class="highlight-stat">
+                <div class="stat-icon">📈</div>
+                <div class="stat-info">
+                    <p>Highest completion rate</p>
+                    <h3>{{ highest_completion_rate }}%</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Average Solve Time Card -->
+        <div class="analytics-card" data-aos="fade-up" data-aos-delay="100">
+            <div class="card-header">
+                <h2>Average Solve Time</h2>
+                <div class="card-actions">
+                    <button class="refresh-btn" onclick="refreshChart('avgTimeChart')">
+                        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="avgTimeChart"></canvas>
+            </div>
+            <div class="highlight-stat">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-info">
+                    <p>Fastest average solve</p>
+                    <h3>{{ fastest_solve_time }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hint Usage Card -->
+        <div class="analytics-card" data-aos="fade-up" data-aos-delay="200">
+            <div class="card-header">
+                <h2>Hint Usage Analysis</h2>
+                <div class="card-actions">
+                    <button class="refresh-btn" onclick="refreshChart('hintUsageChart')">
+                        <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="hintUsageChart"></canvas>
+            </div>
+            <div class="highlight-stat">
+                <div class="stat-icon">💡</div>
+                <div class="stat-info">
+                    <p>Most hints used on</p>
+                    <h3>Clue {{ most_hinted_clue }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Users Card -->
+        <div class="analytics-card pulse-card" data-aos="fade-up" data-aos-delay="300">
+            <div class="card-header">
+                <h2>Live Players</h2>
+            </div>
+            <div class="active-users-display">
+                <div class="active-indicator"></div>
+                <div class="users-count">
+                    <h1 id="active-users-count">{{ active_players_count }}</h1>
+                    <p>currently active</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Drop-off Analysis Card -->
+        <div class="analytics-card" data-aos="fade-up" data-aos-delay="400">
+            <div class="card-header">
+                <h2>Player Retention</h2>
+            </div>
+            <div class="drop-off-info">
+                <div class="retention-stats">
+                    <div class="stat-block">
+                        <h4>Drop-off Point</h4>
+                        <p>Clue {{ dropout_point }}</p>
+                    </div>
+                    <div class="stat-block">
+                        <h4>Retention Rate</h4>
+                        <p>{{ retention_rate }}%</p>
+                    </div>
+                </div>
+                <div class="trend-indicator">
+                    <svg class="trend-arrow" viewBox="0 0 24 24">
+                        <path d="M16.01 11H4v2h12.01v3L20 12l-3.99-4z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Stats Section -->
+    <div class="detailed-stats" data-aos="fade-up" data-aos-delay="500">
+        <div class="stats-header">
+            <h2>Detailed Performance Metrics</h2>
+            <div class="stats-actions">
+                <button class="export-btn" onclick="exportStats()">
+                    Export Data
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table class="analytics-table">
+                <thead>
+                    <tr>
+                        <th>Clue</th>
+                        <th>Solved Rate</th>
+                        <th>Avg. Time</th>
+                        <th>Hint Usage</th>
+                        <th>Difficulty Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in clue_stats %}
+                    <tr>
+                        <td>{{ stat.title }}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: {{ stat.solve_rate }}%"></div>
+                                <span>{{ stat.solve_rate }}%</span>
+                            </div>
+                        </td>
+                        <td>{{ stat.avg_time }}</td>
+                        <td>{{ stat.hint_usage }}%</td>
+                        <td>
+                            <div class="difficulty-indicator" data-level="{{ stat.difficulty }}">
+                                {{ stat.difficulty }}/10
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="access-denied">
+        <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        </svg>
+        <h2>Access Denied</h2>
+        <p>You need administrator privileges to view this page.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .analytics-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .analytics-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .analytics-header h1 {
+        font-size: 2.5rem;
+        color: var(--primary);
+        margin: 0;
+        text-shadow: 0 0 10px var(--primary);
+    }
+
+    .last-update {
+        color: var(--text);
+        opacity: 0.7;
+        margin-top: 0.5rem;
+    }
+
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .analytics-card {
+        background: rgba(20, 25, 35, 0.95);
+        border: 1px solid var(--primary);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .analytics-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        color: var(--primary);
+    }
+
+    .refresh-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .refresh-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: var(--primary);
+    }
+
+    .refresh-btn:hover {
+        background: rgba(0, 255, 255, 0.1);
+    }
+
+    .chart-container {
+        position: relative;
+        height: 200px;
+        margin-bottom: 1rem;
+    }
+
+    .highlight-stat {
+        display: flex;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        margin-right: 1rem;
+    }
+
+    .stat-info p {
+        margin: 0;
+        color: var(--text);
+        opacity: 0.7;
+    }
+
+    .stat-info h3 {
+        margin: 0.25rem 0 0 0;
+        color: var(--primary);
+    }
+
+    .active-users-display {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+    }
+
+    .active-indicator {
+        width: 15px;
+        height: 15px;
+        background: #4CAF50;
+        border-radius: 50%;
+        margin-right: 1rem;
+        animation: pulse 2s infinite;
+    }
+
+    .users-count {
+        text-align: center;
+    }
+
+    .users-count h1 {
+        font-size: 4rem;
+        margin: 0;
+        color: var(--primary);
+    }
+
+    .users-count p {
+        margin: 0;
+        color: var(--text);
+        opacity: 0.7;
+    }
+
+    .retention-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-block {
+        text-align: center;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+    }
+
+    .stat-block h4 {
+        margin: 0;
+        color: var(--text);
+        opacity: 0.7;
+    }
+
+    .stat-block p {
+        margin: 0.5rem 0 0 0;
+        color: var(--primary);
+        font-size: 1.25rem;
+    }
+
+    .trend-indicator {
+        text-align: center;
+        margin-top: 1rem;
+    }
+
+    .trend-arrow {
+        width: 30px;
+        height: 30px;
+        fill: var(--primary);
+    }
+
+    .detailed-stats {
+        background: rgba(20, 25, 35, 0.95);
+        border: 1px solid var(--primary);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .stats-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .export-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: 1px solid var(--primary);
+        color: var(--primary);
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .export-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: var(--primary);
+    }
+
+    .export-btn:hover {
+        background: var(--primary);
+        color: var(--background);
+    }
+
+    .export-btn:hover svg {
+        fill: var(--background);
+    }
+
+    .analytics-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .analytics-table th,
+    .analytics-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .progress-bar {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        height: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .progress {
+        background: var(--primary);
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .progress-bar span {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-size: 0.875rem;
+    }
+
+    .difficulty-indicator {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .difficulty-indicator[data-level="easy"] {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4CAF50;
+    }
+
+    .difficulty-indicator[data-level="medium"] {
+        background: rgba(255, 152, 0, 0.2);
+        color: #FF9800;
+    }
+
+    .difficulty-indicator[data-level="hard"] {
+        background: rgba(244, 67, 54, 0.2);
+        color: #F44336;
+    }
+
+    .access-denied {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    .access-denied svg {
+        width: 64px;
+        height: 64px;
+        fill: var(--primary);
+        margin-bottom: 1rem;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    }
+
+    @media (max-width: 768px) {
+        .analytics-container {
+            padding: 1rem;
+        }
+
+        .analytics-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .analytics-header h1 {
+            font-size: 2rem;
+        }
+
+        .stats-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .export-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chart.js global settings
+        Chart.defaults.color = 'rgba(255, 255, 255, 0.7)';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+        Chart.defaults.font.family = "'Roboto', sans-serif";
+        
+        // Solved Rate Chart
+        const solveRateCtx = document.getElementById('solveRateChart').getContext('2d');
+        new Chart(solveRateCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ clue_labels|safe }},
+                datasets: [{
+                    label: 'Solve Rate (%)',
+                    data: {{ solve_rates|safe }},
+                    backgroundColor: '#64B5F6',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Average Time Chart
+        const avgTimeCtx = document.getElementById('avgTimeChart').getContext('2d');
+        new Chart(avgTimeCtx, {
+            type: 'line',
+            data: {
+                labels: {{ clue_labels|safe }},
+                datasets: [{
+                    label: 'Average Time (minutes)',
+                    data: {{ avg_times|safe }},
+                    borderColor: '#64B5F6',
+                    backgroundColor: 'rgba(100, 181, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Hint Usage Chart
+        const hintUsageCtx = document.getElementById('hintUsageChart').getContext('2d');
+        new Chart(hintUsageCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Used Hint', 'No Hint'],
+                datasets: [{
+                    data: {{ hint_usage_data|safe }},
+                    backgroundColor: ['#64B5F6', '#1E2A3A'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            padding: 20
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+        // Real-time updates for active users
+        function updateActiveUsers() {
+            fetch('/api/active-users/')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('active-users-count').textContent = data.count;
+                });
+        }
+
+        // Refresh charts with new data
+        function refreshChart(chartId) {
+            const btn = event.currentTarget;
+            btn.style.transform = 'rotate(360deg)';
+            
+            fetch(`/api/chart-data/${chartId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    const chart = Chart.getChart(chartId);
+                    if (chart) {
+                        chart.data = data;
+                        chart.update();
+                    }
+                })
+                .finally(() => {
+                    setTimeout(() => {
+                        btn.style.transform = 'rotate(0deg)';
+                    }, 1000);
+                });
+        }
+
+        // Export statistics data
+        function exportStats() {
+            fetch('/api/export-stats/')
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `game-stats-${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                })
+                .catch(error => {
+                    console.error('Export failed:', error);
+                    alert('Failed to export data. Please try again.');
+                });
+        }
+
+        // Initialize real-time updates
+        updateActiveUsers();
+        setInterval(updateActiveUsers, 30000); // Update every 30 seconds
+    });
+</script>
+{% endblock %}
