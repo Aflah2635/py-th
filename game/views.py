@@ -145,11 +145,12 @@ def home(request):
 async def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            PlayerProgress.objects.create(user=user)
-            login(request, user)
-            await discord_logger.log_user_activity(user.username, 'register')  # This is already correct
+        is_valid = await sync_to_async(form.is_valid)()  # Wrap form validation
+        if is_valid:
+            user = await sync_to_async(form.save)()  # Wrap form save
+            await sync_to_async(PlayerProgress.objects.create)(user=user)  # Wrap model creation
+            await sync_to_async(login)(request, user)  # Wrap login
+            await discord_logger.log_user_activity(user.username, 'register')
             return redirect('game:game_interface')
     else:
         form = CustomUserCreationForm()

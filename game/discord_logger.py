@@ -1,114 +1,139 @@
-import os
+import json
 import aiohttp
+from typing import Dict, Optional
+import os
 from datetime import datetime
-from .discord_config import DiscordChannels, DiscordColors, DiscordEmbedTitles
-import logging
+from discord import Embed, Color
 
 class DiscordLogger:
     def __init__(self):
-        self.webhook_urls = {
-            DiscordChannels.CLUE_LOGS.value: os.getenv('DISCORD_CLUE_WEBHOOK'),
-            DiscordChannels.HINT_LOGS.value: os.getenv('DISCORD_HINT_WEBHOOK'),
-            DiscordChannels.USER_ACTIVITY.value: os.getenv('DISCORD_USER_WEBHOOK'),
-            DiscordChannels.ACHIEVEMENT_LOGS.value: os.getenv('DISCORD_ACHIEVEMENT_WEBHOOK'),
-            DiscordChannels.WRONG_ANSWER_LOGS.value: os.getenv('DISCORD_WRONG_ANSWER_WEBHOOK'),
-            DiscordChannels.COMPLETION_LOGS.value: os.getenv('DISCORD_COMPLETION_WEBHOOK')
+        from django.conf import settings
+        # Initialize webhook URLs for different event types
+        webhook_url = settings.DISCORD_WEBHOOK_URL
+        self.webhooks: Dict[str, str] = {
+            'clue': os.getenv('DISCORD_CLUE_WEBHOOK'),  # Webhook URL for clue events
+            'hint': os.getenv('DISCORD_HINT_WEBHOOK'),  # Webhook URL for hint events
+            'user_activity': os.getenv('DISCORD_USER_WEBHOOK'),  # Webhook URL for user activity
+            'achievement': os.getenv('DISCORD_ACHIEVEMENT_WEBHOOK'),  # Webhook URL for achievements
+            'wrong_answer': os.getenv('DISCORD_WRONG_ANSWER_WEBHOOK'),  # Webhook URL for wrong answers
+            'completion': os.getenv('DISCORD_COMPLETION_WEBHOOK')  # Webhook URL for completion events
         }
+        
+    def set_webhook(self, event_type: str, webhook_url: str) -> None:
+        """Set webhook URL for a specific event type."""
+        if event_type in self.webhooks:
+            self.webhooks[event_type] = webhook_url
 
-    async def _send_webhook(self, channel: str, embed: dict) -> bool:
-        webhook_url = self.webhook_urls.get(channel)
-        if not webhook_url:
-            logging.error(f"No webhook URL found for channel: {channel}")
+    async def send_embed(self, event_type: str, embed: Embed, username: Optional[str] = None) -> bool:
+        """Send an embed message to Discord webhook."""
+        if not self.webhooks.get(event_type):
             return False
+
+        webhook_url = self.webhooks[event_type]
+        payload = {
+            'embeds': [embed.to_dict()],
+            'username': username or 'Game Logger'
+        }
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(webhook_url, json={'embeds': [embed]}) as response:
-                    if response.status != 204:
-                        logging.error(f"Discord webhook failed with status {response.status}")
-                        response_text = await response.text()
-                        logging.error(f"Response: {response_text}")
+                async with session.post(webhook_url, json=payload) as response:
                     return response.status == 204
-        except Exception as e:
-            logging.error(f"Error sending Discord webhook: {str(e)}")
+        except Exception:
             return False
 
-    def _create_base_embed(self, title: str, color: int) -> dict:
-        return {
-            'title': title.value if hasattr(title, 'value') else str(title),  # Handle both enum and string
-            'color': color.value if hasattr(color, 'value') else color,  # Handle both enum and string
-            'timestamp': datetime.utcnow().isoformat()
+    async def log_clue(self, player: str, clue: str) -> bool:
+        """Log when a player receives a clue."""
+        embed = Embed(
+            title="🔍 New Clue Received",
+            color=Color.blue(),
+            timestamp=datetime.utcnow()
+        )
+        embed.add_field(name="Player", value=player, inline=True)
+        embed.add_field(name="Clue", value=clue, inline=True)
+        return await self.send_embed('clue', embed, username='Clue Logger')
+
+    async def log_clue_solved(self, player: str, clue: str, time_taken: str) -> bool:
+        """Log when a player solves a clue."""
+        embed = Embed(
+            title="🧩 Clue Solved!",
+            color=Color.green(),
+            timestamp=datetime.utcnow()
+        )
+        embed.add_field(name="Player", value=player, inline=True)
+        embed.add_field(name="Clue", value=clue, inline=True)
+        embed.add_field(name="Time Taken", value=time_taken, inline=True)
+        return await self.send_embed('clue', embed, username='Clue Logger')
+
+    async def log_hint_used(self, player: str, clue: str, hint_number: int, points_deducted: int = 0) -> bool:
+        """Log when a player receives a hint."""
+        embed = Embed(
+            title="💡 Hint Used",
+            color=Color.gold(),
+            timestamp=datetime.utcnow()
+        )
+        embed.add_field(name="Player", value=player, inline=True)
+        embed.add_field(name="Clue", value=clue, inline=True)
+        embed.add_field(name="Hint Number", value=str(hint_number), inline=True)
+        if points_deducted > 0:
+            embed.add_field(name="Points Deducted", value=str(points_deducted), inline=True)
+        return await self.send_embed('hint', embed, username='Hint Logger')
+
+    async def log_user_activity(self, player: str, activity: str) -> bool:
+        """Log player activity."""
+        activity_icons = {
+            'register': '✅',
+            'login': '🚪',
+            'logout': '🔒'
         }
-
-    async def log_clue_solved(self, username: str, clue_number: int, time_taken: float) -> bool:
-        embed = self._create_base_embed(
-            DiscordEmbedTitles.CLUE_SOLVED,
-            DiscordColors.CLUE_SOLVED
+        icon = activity_icons.get(activity.lower(), '👤')
+        embed = Embed(
+            title=f"{icon} User Activity",
+            color=Color.blue(),
+            timestamp=datetime.utcnow()
         )
-        embed['description'] = f'**Player:** {username}\n**Clue:** #{clue_number}\n**Time Taken:** {time_taken:.2f}s'
-        return await self._send_webhook(DiscordChannels.CLUE_LOGS.value, embed)
+        embed.add_field(name="Player", value=player, inline=True)
+        embed.add_field(name="Action", value=activity, inline=True)
+        return await self.send_embed('user_activity', embed, username='Activity Logger')
 
-    async def log_hint_used(self, username: str, clue_number: int, hint_number: int) -> bool:
-        embed = self._create_base_embed(
-            DiscordEmbedTitles.HINT_USED,
-            DiscordColors.HINT_USED
+    async def log_achievement(self, player: str, achievement: str) -> bool:
+        """Log player achievements."""
+        embed = Embed(
+            title="🏆 Achievement Unlocked!",
+            color=Color.purple(),
+            timestamp=datetime.utcnow()
         )
-        embed['description'] = f'**Player:** {username}\n**Clue:** #{clue_number}\n**Hint:** #{hint_number}'
-        return await self._send_webhook(DiscordChannels.HINT_LOGS.value, embed)
+        embed.add_field(name="Player", value=player, inline=True)
+        embed.add_field(name="Achievement", value=achievement, inline=True)
+        return await self.send_embed('achievement', embed, username='Achievement Logger')
 
-    async def log_user_activity(self, username: str, action: str) -> bool:
-        title = {
-            'register': DiscordEmbedTitles.USER_REGISTER,
-            'login': DiscordEmbedTitles.USER_LOGIN,
-            'logout': DiscordEmbedTitles.USER_LOGOUT
-        }.get(action.lower())
-
-        if not title:
-            return False
-
-        embed = self._create_base_embed(title, DiscordColors.USER_ACTIVITY)
-        embed['description'] = f'**Player:** {username}'
-        return await self._send_webhook(DiscordChannels.USER_ACTIVITY.value, embed)
-
-    async def log_achievement(self, username: str, achievement_name: str, description: str) -> bool:
-        embed = self._create_base_embed(
-            DiscordEmbedTitles.ACHIEVEMENT,
-            DiscordColors.ACHIEVEMENT
+    async def log_wrong_answer(self, player: str, clue: str, attempt: str, attempt_count: int) -> bool:
+        """Log wrong answers."""
+        if attempt_count < 5:
+            return True
+        embed = Embed(
+            title="🧪 Wrong Answer Submitted",
+            color=Color.red(),
+            timestamp=datetime.utcnow()
         )
-        embed['description'] = f'**Player:** {username}\n**Achievement:** {achievement_name}\n**Description:** {description}'
-        return await self._send_webhook(DiscordChannels.ACHIEVEMENT_LOGS.value, embed)
+        embed.add_field(name="Player", value=player, inline=True)
+        embed.add_field(name="Clue", value=clue, inline=True)
+        embed.add_field(name="Attempt", value=attempt, inline=True)
+        embed.add_field(name="Attempt Count", value=str(attempt_count), inline=True)
+        return await self.send_embed('wrong_answer', embed, username='Answer Logger')
 
-    async def log_wrong_answer(self, username: str, clue_number: int, attempt: str) -> bool:
-        embed = self._create_base_embed(
-            DiscordEmbedTitles.WRONG_ANSWER,
-            DiscordColors.WRONG_ANSWER
+    async def log_completion(self, player: str, rank: int, total_score: int, time_taken: str) -> bool:
+        """Log challenge completion."""
+        embed = Embed(
+            title="🏁 Hunt Completed!",
+            color=Color.from_rgb(205, 127, 50),  # Bronze color
+            timestamp=datetime.utcnow()
         )
-        embed['description'] = f'**Player:** {username}\n**Clue:** #{clue_number}\n**Attempt:** {attempt}'
-        return await self._send_webhook(DiscordChannels.WRONG_ANSWER_LOGS.value, embed)
-
-    async def log_hunt_completion(self, username: str, total_time: float, hints_used: int) -> bool:
-        embed = self._create_base_embed(
-            DiscordEmbedTitles.COMPLETION,
-            DiscordColors.COMPLETION
-        )
-        embed['description'] = f'**Player:** {username}\n**Total Time:** {total_time:.2f}s\n**Hints Used:** {hints_used}'
-        return await self._send_webhook(DiscordChannels.COMPLETION_LOGS.value, embed)
-
-    async def log_game_progress(self, username: str, question_number: int, current_score: int) -> bool:
-        embed = self._create_base_embed(
-            DiscordEmbedTitles.CLUE_SOLVED,
-            DiscordColors.CLUE_SOLVED
-        )
-        embed['description'] = f'**Player:** {username}\n**Current Question:** #{question_number}\n**Current Score:** {current_score}'
-        return await self._send_webhook(DiscordChannels.CLUE_LOGS.value, embed)
-
-    async def log_high_score(self, username: str, score: int) -> bool:
-        embed = self._create_base_embed(
-            "🏅 New High Score",
-            DiscordColors.CLUE_SOLVED.value
-        )
-        embed['description'] = f'**Player:** {username}\n**New High Score:** {score}'
-        return await self._send_webhook(DiscordChannels.CLUE_LOGS.value, embed)
+        embed.add_field(name="Player", value=player, inline=True)
+        embed.add_field(name="Final Rank", value=f"#{rank}", inline=True)
+        embed.add_field(name="Total Score", value=str(total_score), inline=True)
+        embed.add_field(name="Total Time", value=time_taken, inline=True)
+        return await self.send_embed('completion', embed, username='Completion Logger')
 
 
 # Create a singleton instance
