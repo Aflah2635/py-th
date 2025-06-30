@@ -1,0 +1,21 @@
+{% extends "game/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-body text-center">
+            <h2 class="card-title mb-4">⚠️ Questions Unavailable</h2>
+            <p class="lead">
+                The treasure hunt is temporarily inactive. New challenges will be live soon. Stay tuned!
+            </p>
+            <br>
+            <div class="mt-4">
+                <a href="{% url 'game:dashboard' %}" class="btn btn-primary">
+                    Go to Dashboard
+                </a>
+            </div>
+            <br>
+        </div>
+    </div>
+</div>
+{% endblock %}

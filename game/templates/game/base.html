@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasure Hunt</title>
+    
+    <style>
+        :root {
+            --primary: #00ffff;
+            --secondary: #ff00ff;
+            --accent: #ffff00;
+            --background: #000033;
+            --text: #00ffff;
+        }
+
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+
+
+        body {
+            background-color: var(--background);
+            background-image: 
+                linear-gradient(45deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(-45deg, rgba(255, 0, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 0, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px, 50px 50px, 30px 30px;
+            animation: gridMove 20s linear infinite;
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .navbar {
+            background: rgba(22, 24, 29, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0.75rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            border-radius: 0 0 18px 18px;
+        }
+
+        .navbar .robot-icon {
+            width: 32px;
+            height: 32px;
+            fill: var(--primary);
+        }
+
+        .navbar a {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .navbar a:hover {
+            color: var(--primary);
+        }
+
+        .navbar a.active {
+            color: var(--primary);
+        }
+
+        .navbar a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 1rem auto;
+            padding: 0 1rem;
+            flex: 1;
+        }
+
+        .card {
+            background-color: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: holographic 3s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes holographic {
+            0% { transform: rotate(45deg) translateY(-100%); }
+            100% { transform: rotate(45deg) translateY(100%); }
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--glow-primary), var(--glow-secondary);
+        }
+
+        .btn {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-size: 16px;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: var(--primary);
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            transition: width 0.6s ease, height 0.6s ease;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .btn:hover::before {
+            width: 200%;
+            height: 200%;
+        }
+
+        .btn:hover {
+            background-color: var(--primary);
+            color: var(--background);
+        }
+
+        .btn-secondary {
+            color: var(--secondary);
+            border-color: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--secondary);
+            color: var(--background);
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--primary);
+            color: var(--text);
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+            width: 100%;
+            max-width: 400px;
+            font-size: 16px;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        @keyframes neonPulse {
+            0% { box-shadow: var(--glow-primary); }
+            50% { box-shadow: 0 0 5px var(--primary), 0 0 10px var(--primary); }
+            100% { box-shadow: var(--glow-primary); }
+        }
+
+        @keyframes textGlow {
+            0% { text-shadow: 0 0 5px var(--primary); }
+            50% { text-shadow: 0 0 10px var(--primary), 0 0 20px var(--secondary); }
+            100% { text-shadow: 0 0 5px var(--primary); }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+            
+            .navbar {
+                display: none;
+            }
+            
+            body {
+                padding: 0;
+            }
+            
+            .container {
+                margin: 0.5rem auto;
+                padding: 0 0.5rem;
+            }
+            
+            .card {
+                padding: 1rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            input[type="text"],
+            input[type="password"] {
+                font-size: 14px;
+            }
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--secondary);
+            position: relative;
+        }
+
+        h1:hover, h2:hover, h3:hover, h4:hover, h5:hover, h6:hover {
+            
+        }
+
+        .messages {
+            list-style: none;
+            padding: 0;
+        }
+
+        .messages li {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            border-left: 4px solid var(--primary);
+            background-color: rgba(0, 255, 255, 0.1);
+            text-align: center;
+            font-size: 1.1em;
+            animation: textGlow 2s infinite;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.8);
+            border-top: 2px solid var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar new-navbar">
+        <div class="navbar-left">
+            <a href="{% url 'game:home' %}" class="logo-link">
+                <svg class="robot-icon" viewBox="0 0 24 24"> <!-- same SVG as before --> </svg>
+                <span class="logo-text">CyberHunt</span>
+            </a>
+        </div>
+        <div class="navbar-center">
+            <a href="{% url 'game:dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="{% url 'game:game_interface' %}"><i class="fas fa-gamepad"></i> Play</a>
+            <a href="{% url 'game:leaderboard' %}"><i class="fas fa-trophy"></i> Leaderboard</a>
+            <a href="{% url 'game:help' %}"><i class="fas fa-question-circle"></i> Help</a>
+            {% if user.is_staff %}
+            <a href="{% url 'admin:index' %}"><i class="fas fa-tools"></i> Admin</a>
+            <a href="{% url 'game:analytics' %}"><i class="fas fa-chart-bar"></i> Analytics</a>
+            {% endif %}
+        </div>
+        <div class="navbar-right">
+            {% if user.is_authenticated %}
+            <a href="{% url 'game:logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            {% else %}
+            <a href="{% url 'game:login' %}"><i class="fas fa-sign-in-alt"></i> Login</a>
+            <a href="{% url 'game:register' %}"><i class="fas fa-user-plus"></i> Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Aflah. All rights reserved.</p>
+        <p>Unauthorized copying or distribution of any part of this project is prohibited without prior written permission.</p>
+    </footer>
+</body>
+</html>
+<style>
+.new-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 2rem;
+  background: linear-gradient(90deg, #1a1f2b 0%, #232b3e 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 0 0 18px 18px;
+}
+.new-navbar .navbar-left .logo-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 1.2rem;
+  text-decoration: none;
+}
+.new-navbar .navbar-center {
+  display: flex;
+  gap: 1.5rem;
+}
+.new-navbar .navbar-center a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s;
+}
+.new-navbar .navbar-center a:hover {
+  color: var(--secondary);
+}
+.new-navbar .navbar-right a {
+  color: #fff;
+  margin-left: 1rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+@media (max-width: 768px) {
+  .new-navbar {
+    display: none;
+  }
+}
+</style>

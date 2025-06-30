@@ -1,0 +1,295 @@
+.leaderboard-container {
+    @apply max-w-4xl mx-auto space-y-4;
+}
+
+.sort-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.sort-control {
+    padding: 0.5rem 1rem;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.sort-control:hover {
+    background: rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.sort-control.active {
+    background: var(--primary);
+    color: black;
+}
+
+.sort-control.active::after {
+    content: '';
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+}
+
+.sort-control.active.desc::after {
+    border-top: 4px solid black;
+}
+
+.sort-control.active.asc::after {
+    border-bottom: 4px solid black;
+}
+
+.sort-control {
+    @apply px-4 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors
+    relative cursor-pointer select-none;
+}
+
+.sort-control::after {
+    content: '⌄';
+    @apply ml-2 inline-block transition-transform;
+}
+
+.sort-control.sort-desc::after {
+    transform: rotate(180deg);
+}
+
+.leaderboard-entry {
+    @apply bg-gray-800 rounded-xl p-4 flex items-center justify-between
+    border-l-4 transition-all duration-300 hover:translate-x-2
+    hover:shadow-lg hover:shadow-cyan-900/20;
+}
+
+.rank-1 { @apply border-yellow-400; }
+.rank-2 { @apply border-gray-400; }
+.rank-3 { @apply border-amber-700; }
+
+.rank-info {
+    @apply flex items-center gap-4;
+}
+
+.rank-badge {
+    @apply w-10 h-10 rounded-full flex items-center justify-center
+    text-xl font-bold bg-gray-700 text-gray-300;
+}
+
+.rank-1 .rank-badge { @apply bg-yellow-400/20 text-yellow-400; }
+.rank-2 .rank-badge { @apply bg-gray-400/20 text-gray-400; }
+.rank-3 .rank-badge { @apply bg-amber-700/20 text-amber-700; }
+
+.player-info {
+    @apply flex flex-col;
+}
+
+.username {
+    @apply text-lg font-semibold text-gray-200 flex items-center gap-2;
+}
+
+.status {
+    @apply text-sm text-cyan-400;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(0, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.stat-item.col-span-2 {
+    grid-column: span 2;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--secondary);
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.stat-item {
+    @apply flex flex-col items-end;
+}
+
+.stat-label {
+    @apply text-gray-400;
+}
+
+.stat-value {
+    @apply text-gray-200 font-medium;
+}
+
+.crown {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    margin-right: 0.5rem;
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
+
+.crown.rank-1 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFD700'%3E%3Cpath d='M12 2L8 6 4 2 2 12 4 14h16l2-2-2-10-4 4z'/%3E%3C/svg%3E"); }
+.crown.rank-2 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23C0C0C0'%3E%3Cpath d='M12 2L8 6 4 2 2 12 4 14h16l2-2-2-10-4 4z'/%3E%3C/svg%3E"); }
+.crown.rank-3 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23CD7F32'%3E%3Cpath d='M12 2L8 6 4 2 2 12 4 14h16l2-2-2-10-4 4z'/%3E%3C/svg%3E"); }
+
+.view-stats-btn {
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.view-stats-btn:hover {
+    background: rgba(0, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+/* Switch styling for admin visibility toggle */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 255, 255, 0.1);
+    transition: .4s;
+    border-radius: 34px;
+    border: 1px solid var(--primary);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 3px;
+    background-color: var(--primary);
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+    background-color: black;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes rankUp {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+@keyframes rankDown {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+}
+
+.rank-up { animation: rankUp 0.5s ease-out; }
+.rank-down { animation: rankDown 0.5s ease-out; }
+
+/* Responsive Design */
+/* Responsive design */
+@media (max-width: 768px) {
+    .leaderboard-entry {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .rank-info {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat-item.col-span-2 {
+        grid-column: span 1;
+    }
+
+    .sort-controls {
+        justify-content: center;
+    }
+}
+
+/* Admin Toggle Switch */
+.switch {
+    @apply relative inline-block w-12 h-6;
+}
+
+.switch input {
+    @apply opacity-0 w-0 h-0;
+}
+
+.slider {
+    @apply absolute cursor-pointer inset-0 bg-gray-700
+    transition-all duration-300 rounded-full;
+}
+
+.slider:before {
+    content: '';
+    @apply absolute h-4 w-4 left-1 bottom-1 bg-gray-300
+    transition-all duration-300 rounded-full;
+}
+
+input:checked + .slider {
+    @apply bg-cyan-600;
+}
+
+input:checked + .slider:before {
+    @apply transform translate-x-6 bg-white;
+}

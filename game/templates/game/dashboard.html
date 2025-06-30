@@ -1,0 +1,375 @@
+{% extends 'game/base.html' %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- User Profile Card -->
+    <div class="profile-card card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <svg viewBox="0 0 24 24" class="avatar-icon">
+                    <path d="M12 2a5 5 0 015 5v2a5 5 0 01-10 0V7a5 5 0 015-5zM3 20v-2a3 3 0 013-3h12a3 3 0 013 3v2"/>
+                </svg>
+            </div>
+            <div class="profile-info">
+                <h2 class="username">{{ user.username }}</h2>
+                <p class="rank">#{{ player_progress.rank|default:"--" }} on leaderboard</p>
+            </div>
+            <div class="profile-score">
+                <span class="score-value">{{ player_progress.score }}</span>
+                <span class="score-label">Score</span>
+            </div>
+        </div>
+        <div class="progress-section">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {% widthratio player_progress.completed_questions.count total_questions 100 %}%"></div>
+            </div>
+            <p class="progress-text">{{ player_progress.completed_questions.count }} of {{ total_questions }} clues solved</p>
+        </div>
+    </div>
+
+    <!-- Clue History Section -->
+    <h2 class="section-title">Clue History</h2>
+    <div class="history-container">
+        <!-- Status Panel -->
+        <div class="history-panel card">
+            <div class="panel-header">
+                <div class="header-item">Clue</div>
+                <div class="header-item">Status</div>
+                <div class="header-item">Time</div>
+                <div class="header-item">Hints</div>
+            </div>
+            <div class="panel-content">
+                {% for progress in question_progress %}
+                <div class="history-row">
+                    <div class="row-item">{{ progress.question.title }}</div>
+                    <div class="row-item status-{% if progress.completed %}completed{% elif progress.started %}in-progress{% else %}locked{% endif %}">
+                        {% if progress.completed %}
+                        <svg class="status-icon completed" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                        </svg>
+                        <span>Completed</span>
+                        {% elif progress.started %}
+                        <svg class="status-icon in-progress" viewBox="0 0 24 24">
+                            <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                        </svg>
+                        <span>In Progress</span>
+                        {% else %}
+                        <svg class="status-icon locked" viewBox="0 0 24 24">
+                            <path d="M12 17a2 2 0 100-4 2 2 0 000 4zm6-9a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V10a2 2 0 012-2h1V6a5 5 0 0110 0v2h1zm-6-5a3 3 0 00-3 3v2h6V6a3 3 0 00-3-3z"/>
+                        </svg>
+                        <span>Locked</span>
+                        {% endif %}
+                    </div>
+                    <div class="row-item">{{ progress.time_taken|time:"H:i"|default:"--:--" }}</div>
+                    <div class="row-item hints-used">
+                        {% with hint_count=progress.hints_used.count %}
+                        {% if hint_count > 0 %}
+                        <span class="hint-badge">{{ hint_count }}</span>
+                        {% else %}
+                        <span class="hint-badge none">0</span>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <style>
+            .panel-header {
+                display: grid;
+                grid-template-columns: 2fr 2fr 1fr 1fr;
+                padding: 1rem;
+                background: rgba(0, 255, 255, 0.1);
+                border-bottom: 1px solid var(--primary);
+            }
+
+            .history-row {
+                display: grid;
+                grid-template-columns: 2fr 2fr 1fr 1fr;
+                padding: 0.75rem 0;
+                border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+                transition: background-color 0.3s ease;
+            }
+
+            .history-row:hover {
+                background: rgba(0, 255, 255, 0.05);
+            }
+
+            .status-completed {
+                color: #00ff00;
+            }
+
+            .status-in-progress {
+                color: #ffff00;
+            }
+
+            .status-locked {
+                color: #ff0000;
+            }
+
+            .status-icon {
+                width: 20px;
+                height: 20px;
+                margin-right: 0.5rem;
+            }
+
+            .hints-used {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .hint-badge {
+                background: rgba(0, 255, 255, 0.2);
+                color: var(--primary);
+                padding: 0.2rem 0.5rem;
+                border-radius: 12px;
+                font-size: 0.9rem;
+                min-width: 24px;
+                text-align: center;
+            }
+
+            .hint-badge.none {
+                background: rgba(255, 0, 0, 0.2);
+                color: #ff0000;
+            }
+
+            @media (max-width: 768px) {
+                .panel-header,
+                .history-row {
+                    grid-template-columns: 1fr 1fr 1fr 0.5fr;
+                    font-size: 0.9rem;
+                }
+
+                .status-icon {
+                    width: 16px;
+                    height: 16px;
+                }
+            }
+        </style>
+        <!-- Clue Details Panel -->
+        <div class="history-panel card">
+            <div class="panel-header">
+                <div class="header-item">#</div>
+                <div class="header-item">Clue No.</div>
+                <div class="header-item">Hint 2</div>
+            </div>
+            <div class="panel-content">
+                {% for progress in question_progress %}
+                <div class="history-row">
+                    <div class="row-item">{{ forloop.counter }}</div>
+                    <div class="row-item">{{ progress.question.title }}</div>
+                    <div class="row-item">
+                        {% if progress.hintusage_set.exists %}
+                        <svg class="hint-icon used" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                        </svg>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .profile-card {
+        background: rgba(22, 24, 29, 0.95);
+        border: 1px solid var(--primary);
+        padding: 2rem;
+    }
+
+    .profile-header {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        background: rgba(0, 255, 255, 0.1);
+        border-radius: 50%;
+        padding: 1rem;
+    }
+
+    .avatar-icon {
+        width: 100%;
+        height: 100%;
+        fill: var(--primary);
+    }
+
+    .profile-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .username {
+        font-size: 2rem;
+        margin: 0;
+        color: var(--primary);
+    }
+
+    .rank {
+        font-size: 1.1rem;
+        color: var(--secondary);
+        margin: 0;
+        opacity: 0.9;
+    }
+
+    .profile-score {
+        text-align: right;
+    }
+
+    .score-value {
+        font-size: 2.5rem;
+        color: var(--primary);
+        display: block;
+    }
+
+    .score-label {
+        color: var(--secondary);
+        font-size: 1.1rem;
+    }
+
+    .progress-section {
+        margin-top: 1rem;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: rgba(0, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--primary);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        text-align: center;
+        color: var(--text);
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .section-title {
+        font-size: 1.8rem;
+        color: var(--secondary);
+        margin: 2rem 0 1rem;
+    }
+
+    .history-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .history-panel {
+        background: rgba(22, 24, 29, 0.95);
+        border: 1px solid var(--primary);
+    }
+
+    .panel-header {
+        display: grid;
+        grid-template-columns: 0.5fr 2fr 1fr;
+        padding: 1rem;
+        background: rgba(0, 255, 255, 0.1);
+        border-bottom: 1px solid var(--primary);
+    }
+
+    .header-item {
+        color: var(--primary);
+        font-weight: bold;
+    }
+
+    .panel-content {
+        padding: 1rem;
+    }
+
+    .history-row {
+        display: grid;
+        grid-template-columns: 0.5fr 2fr 1fr;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+    }
+
+    .history-row:last-child {
+        border-bottom: none;
+    }
+
+    .row-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-icon,
+    .hint-icon {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .status-solved .status-icon,
+    .hint-icon.used {
+        fill: var(--primary);
+        stroke: none;
+    }
+
+    .status-in-progress {
+        color: var(--accent);
+    }
+
+    .status-solved {
+        color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+        .profile-header {
+            grid-template-columns: 1fr;
+            text-align: center;
+            gap: 1rem;
+        }
+
+        .profile-avatar {
+            margin: 0 auto;
+        }
+
+        .profile-info {
+            text-align: center;
+        }
+
+        .profile-score {
+            text-align: center;
+        }
+
+        .history-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
