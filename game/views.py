@@ -366,54 +366,50 @@ async def submit_answer(request):
 async def get_hint(request):
     if request.method == 'POST':
         progress = await sync_to_async(PlayerProgress.objects.get)(user=request.user)
-        # Use sync_to_async for accessing the related field
         current_question = await sync_to_async(lambda: progress.current_question)()
         
         if not current_question:
             return JsonResponse({'error': 'No current question'}, status=400)
         
-        # Use sync_to_async for all database operations
         hint = await sync_to_async(lambda: Hint.objects.filter(question=current_question).first())()
         if hint:
-            # Get question progress using sync_to_async
+            # Check if player has enough points for the hint
+            if progress.score < hint.penalty_points:
+                return JsonResponse({'error': '🛑 You dont have enough points to unlock this hint'}, status=400)
+                
             question_progress = await sync_to_async(QuestionProgress.objects.get)(
                 player=progress, 
                 question=current_question
             )
             
-            # Create hint usage with sync_to_async
             await sync_to_async(HintUsage.objects.create)(
                 question_progress=question_progress,
                 hint=hint,
                 points_deducted=hint.penalty_points
             )
             
-            # Update progress
+            # Update player's score
             progress.score = max(0, progress.score - hint.penalty_points)
-            progress.total_hints_used += 1
             await sync_to_async(progress.save)()
             
-            # Log hint usage
-            await log_activity(request.user, 'hint_used', meta_info=json.dumps({
-                'clue_number': current_question.order,
-                'hint_number': hint.id,
-                'points_deducted': hint.penalty_points
-            }))
-            
             # Log the hint usage
+            discord_logger = DiscordLogger()
             await discord_logger.log_hint_used(
-                request.user.username,
-                current_question.order,
-                hint.number if hasattr(hint, 'number') else 1
+                player=request.user.username,
+                clue=current_question.title,
+                hint_number=1,
+                points_deducted=hint.penalty_points
             )
             
             return JsonResponse({
                 'hint': hint.content,
+                'points_deducted': hint.penalty_points,
                 'penalty': hint.penalty_points
             })
         
         return JsonResponse({'error': 'No hint available'}, status=404)
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @login_required
 def help_view(request):

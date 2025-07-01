@@ -136,6 +136,16 @@
         .error-glow {
             animation: errorGlow 2s infinite;
         }
+<style>
+.hint-text {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+</style>
 </style>
 <div class="card">
     <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -218,6 +228,42 @@
 
         <div style="margin-top: 1rem; text-align: center;">
             <button id="hint-btn" class="btn btn-secondary">Get Hint</button>
+            <div id="hint-display" class="hint-text"></div>
+
+            <script>
+            document.getElementById('hint-btn').addEventListener('click', function() {
+                fetch('{% url "game:get_hint" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const hintDisplay = document.getElementById('hint-display');
+                    if (data.error) {
+                        hintDisplay.textContent = data.error;
+                        hintDisplay.style.color = '#ff3860';
+                    } else {
+                        hintDisplay.textContent = `Hint (${data.penalty} points deducted): ${data.hint}`;
+                        hintDisplay.style.color = '#00d1b2';
+                        // Update the score display
+                        const scoreDisplay = document.querySelector('h2');
+                        const currentScore = parseInt(scoreDisplay.textContent.match(/\d+/)[0]);
+                        scoreDisplay.textContent = `Current Score: ${currentScore - data.points_deducted}`;
+                    }
+                    hintDisplay.style.opacity = '1';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const hintDisplay = document.getElementById('hint-display');
+                    hintDisplay.textContent = 'An error occurred. Please try again.';
+                    hintDisplay.style.color = '#ff3860';
+                    hintDisplay.style.opacity = '1';
+                });
+            });
+            </script>
         </div>
 
         <div id="hint-display" style="display: none; margin-top: 1rem; padding: 1rem;
