@@ -13,6 +13,15 @@ class ActivityLog(models.Model):
         ('game_completed', 'Game Completed')
     ]
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['activity_type', '-timestamp']),
+            models.Index(fields=['user', '-timestamp'])
+        ]
+        permissions = [
+            ('view_clue_completions', 'Can view clue completion logs')
+        ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
     timestamp = models.DateTimeField(auto_now_add=True)

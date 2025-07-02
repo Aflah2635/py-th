@@ -40,7 +40,10 @@ def dashboard(request):
         'submission_history': submission_history,
     }
     return render(request, 'game/dashboard.html', context)
-from .discord_logger import discord_logger
+from .discord_logger import DiscordLogger
+
+# Initialize discord logger at module level
+discord_logger = DiscordLogger()
 
 @user_passes_test(lambda u: u.is_staff)
 def analytics_dashboard(request):

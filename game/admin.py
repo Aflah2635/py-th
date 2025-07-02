@@ -6,17 +6,59 @@ from .activity_log import ActivityLog
 
 @admin.register(ActivityLog)
 class ActivityLogAdmin(admin.ModelAdmin):
-    list_display = ('user', 'activity_type', 'timestamp', 'meta_info')
+    list_display = ('user', 'activity_type', 'timestamp', 'display_meta_info', 'time_taken')
     list_filter = ('activity_type', 'timestamp', 'user')
     search_fields = ('user__username', 'activity_type', 'meta_info')
     ordering = ('-timestamp',)
-    readonly_fields = ('timestamp',)
+    readonly_fields = ('timestamp', 'time_taken')
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if not request.user.is_staff:
+            return qs.none()
+        return qs
     
     def has_add_permission(self, request):
         return False  # Prevent manual creation of logs
     
     def has_change_permission(self, request, obj=None):
         return False  # Prevent editing of logs
+    
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_staff
+    
+    def display_meta_info(self, obj):
+        if obj.activity_type == 'clue_solved' and obj.meta_info:
+            try:
+                info = eval(obj.meta_info)
+                return format_html('Clue: <strong>{}</strong>', info.get('clue_title', 'Unknown'))
+            except:
+                return obj.meta_info
+        return obj.meta_info
+    display_meta_info.short_description = 'Details'
+    
+    def time_taken(self, obj):
+        if obj.activity_type == 'clue_solved' and obj.meta_info:
+            try:
+                info = eval(obj.meta_info)
+                seconds = info.get('time_taken', 0)
+                minutes = seconds / 60
+                return format_html('{:.1f} minutes', minutes)
+            except:
+                return '-'
+        return '-'
+    time_taken.short_description = 'Time Taken'
+    
+    def get_list_display(self, request):
+        if request.GET.get('activity_type') == 'clue_solved':
+            return ('user', 'timestamp', 'display_meta_info', 'time_taken')
+        return ('user', 'activity_type', 'timestamp', 'display_meta_info')
+    
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        if request.GET.get('activity_type') == 'clue_solved':
+            extra_context['title'] = 'Clue Completion Logs'
+        return super().changelist_view(request, extra_context)
 
 class HintInline(admin.TabularInline):
     model = Hint

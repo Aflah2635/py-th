@@ -29,11 +29,18 @@ class LeaderboardConsumer(AsyncWebsocketConsumer):
         if not sort_params:
             sort_params = {'column': 'score', 'direction': 'desc'}
 
-        # Base query with annotations
+        # Base query with annotations and anti-manipulation checks
         players = PlayerProgress.objects.annotate(
             total_questions=Count('completed_questions'),
-            correct_attempts=Count('user__submissionhistory', filter=Q(user__submissionhistory__is_correct=True)),
-            total_attempts=Count('user__submissionhistory')
+            correct_attempts=Count('user__submissionhistory', 
+                filter=Q(user__submissionhistory__is_correct=True) & 
+                       ~Q(user__submissionhistory__submission_time__gt=F('user__submissionhistory__submission_time') + timedelta(seconds=2))
+            ),
+            total_attempts=Count('user__submissionhistory'),
+            last_activity=Max('user__activitylog__timestamp')
+        ).filter(
+            Q(finish_time__isnull=True) | 
+            Q(last_activity__gte=timezone.now() - timedelta(minutes=30))
         )
 
         # Apply sorting
@@ -71,7 +78,20 @@ class LeaderboardConsumer(AsyncWebsocketConsumer):
         } for player in players[:10]]
     
     async def send_leaderboard(self):
-        leaderboard_data = await self.get_leaderboard_data()
+        from django.core.cache import cache
+        from django.utils import timezone
+        import hashlib
+
+        # Generate cache key based on current time window (5 minute intervals)
+        time_window = int(timezone.now().timestamp() / 300)  # 5 minutes
+        cache_key = f'leaderboard_data_{time_window}'
+        
+        # Try to get cached data
+        leaderboard_data = cache.get(cache_key)
+        if not leaderboard_data:
+            leaderboard_data = await self.get_leaderboard_data()
+            cache.set(cache_key, leaderboard_data, 300)  # Cache for 5 minutes
+
         await self.send(text_data=json.dumps({
             'type': 'leaderboard_update',
             'leaderboard': leaderboard_data
