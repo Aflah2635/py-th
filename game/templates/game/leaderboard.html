@@ -35,17 +35,22 @@
             {% for player in top_players %}
             <div class="leaderboard-entry rank-{{ forloop.counter }}" data-player-id="{{ player.user.id }}">
                 <div class="rank-info">
-                    <div class="rank-badge">{{ forloop.counter }}</div>
+                    <div class="rank-badge">
+                        {% if forloop.counter == 1 %}
+                            🥇
+                        {% elif forloop.counter == 2 %}
+                            🥈
+                        {% elif forloop.counter == 3 %}
+                            🥉
+                        {% else %}
+                            {{ forloop.counter }}
+                        {% endif %}
+                    </div>
                     <div class="player-info">
                         <div class="username">
-                            {% if forloop.counter <= 3 %}
-                            <div class="crown rank-{{ forloop.counter }}"></div>
-                            {% endif %}
                             {{ player.user.username }}
                         </div>
-                        {% if player.finish_time %}
                         <div class="status">Mission Complete</div>
-                        {% endif %}
                     </div>
                 </div>
                 <div class="stats-grid">
@@ -54,23 +59,17 @@
                         <span class="stat-value">{{ player.score }} pts</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Progress</span>
-                        <span class="stat-value">{{ player.completed_questions.count }}/{{ total_questions }}</span>
+                        <span class="stat-label">Time Taken</span>
+                        <span class="stat-value">{{ player.duration }}</span>
                     </div>
+                    <!-- <div class="stat-item">
+                        <span class="stat-label">Clues Solved</span>
+                        <span class="stat-value">{{ player.completed_questions }}/{{ player.total_questions }}</span>
+                    </div> -->
                     <div class="stat-item">
-                        <span class="stat-label">Hints Used</span>
-                        <span class="stat-value">{{ player.total_hints_used }}</span>
+                        <span class="stat-label">Last</span>
+                        <span class="stat-value">{{ player.last_clue|default:"N/A" }}</span>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Accuracy</span>
-                        <span class="stat-value">{{ player.accuracy }}%</span>
-                    </div>
-                    {% if player.finish_time %}
-                    <div class="stat-item col-span-2">
-                        <span class="stat-label">Time</span>
-                        <span class="stat-value">{{ player.finish_time|timeuntil:player.start_time }}</span>
-                    </div>
-                    {% endif %}
                 </div>
 
             </div>

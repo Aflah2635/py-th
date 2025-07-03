@@ -17,8 +17,8 @@ A cyberpunk-themed web-based treasure hunt game built with Django, featuring rea
 
 ## Prerequisites
 
-- Python 3.13+
-- Redis Server 7.2+ (for caching, channels, and real-time features)
+- Python 3.11+
+- Redis Server 7.2+ (for caching and real-time features)
 - PostgreSQL 15+ Database
 - Node.js 18+ (for frontend development)
 
@@ -46,6 +46,7 @@ A cyberpunk-themed web-based treasure hunt game built with Django, featuring rea
    DJANGO_SECRET_KEY=your_secret_key
    DEBUG=True
    ALLOWED_HOSTS=*
+   ```
 
 5. Set up the database:
    ```bash
@@ -96,7 +97,7 @@ A cyberpunk-themed web-based treasure hunt game built with Django, featuring rea
 
 ### Technical Features
 - ASGI support for real-time features
-- Redis caching and pub/sub for improved performance
+- Redis caching for improved performance
 - PostgreSQL for robust data storage
 - Scalable microservices architecture
 - Cross-origin resource sharing support

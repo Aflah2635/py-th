@@ -57,12 +57,17 @@ class HintUsage(models.Model):
 class PlayerProgress(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     current_question = models.ForeignKey(Question, on_delete=models.SET_NULL, null=True, blank=True)
-    score = models.IntegerField(default=0)
+    score = models.IntegerField(default=0, db_index=True)
     completed_questions = models.ManyToManyField(Question, related_name='completed_by', blank=True)
     start_time = models.DateTimeField(default=timezone.now)
-    finish_time = models.DateTimeField(null=True, blank=True)
+    finish_time = models.DateTimeField(null=True, blank=True, db_index=True)
     total_hints_used = models.IntegerField(default=0)
-    total_time_spent = models.DurationField(default=timedelta)
+    total_time_spent = models.DurationField(default=timedelta, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['-score', 'total_time_spent'], name='leaderboard_idx')
+        ]
 
     def __str__(self):
         return f'{self.user.username} - Score: {self.score}'

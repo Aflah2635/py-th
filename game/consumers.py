@@ -26,8 +26,9 @@ class LeaderboardConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_leaderboard_data(self, sort_params=None):
-        if not sort_params:
-            sort_params = {'column': 'score', 'direction': 'desc'}
+        from django.db.models import F, Max
+        from django.utils import timezone
+        from datetime import timedelta
 
         # Base query with annotations and anti-manipulation checks
         players = PlayerProgress.objects.annotate(
@@ -37,30 +38,13 @@ class LeaderboardConsumer(AsyncWebsocketConsumer):
                        ~Q(user__submissionhistory__submission_time__gt=F('user__submissionhistory__submission_time') + timedelta(seconds=2))
             ),
             total_attempts=Count('user__submissionhistory'),
-            last_activity=Max('user__activitylog__timestamp')
+            last_activity=Max('user__activitylog__timestamp'),
+            time_taken=F('finish_time') - F('start_time')
         ).filter(
-            Q(finish_time__isnull=True) | 
-            Q(last_activity__gte=timezone.now() - timedelta(minutes=30))
-        )
+            Q(finish_time__isnull=False)  # Only show completed players
+        ).order_by('-score', 'time_taken')  # Sort by score desc, then time taken asc
 
-        # Apply sorting
-        sort_prefix = '-' if sort_params['direction'] == 'desc' else ''
-        if sort_params['column'] == 'accuracy':
-            players = sorted(
-                players,
-                key=lambda p: (p.correct_attempts / p.total_attempts if p.total_attempts > 0 else 0),
-                reverse=(sort_params['direction'] == 'desc')
-            )
-        elif sort_params['column'] == 'progress':
-            players = players.order_by(f'{sort_prefix}total_questions')
-        elif sort_params['column'] == 'time':
-            players = sorted(
-                players,
-                key=lambda p: (p.finish_time - p.start_time) if p.finish_time else float('inf'),
-                reverse=(sort_params['direction'] == 'desc')
-            )
-        else:  # Default to score
-            players = players.order_by(f'{sort_prefix}score')
+        # No need for additional sorting since it's handled in the query
 
         total_questions = Question.objects.count()
         
@@ -68,13 +52,9 @@ class LeaderboardConsumer(AsyncWebsocketConsumer):
             'username': player.user.username,
             'score': player.score,
             'completed': player.finish_time is not None,
-            'duration': str(player.finish_time - player.start_time) if player.finish_time else None,
+            'duration': str(player.time_taken).split('.')[0] if player.finish_time else None,
             'completed_questions': player.completed_questions.count(),
-            'total_questions': total_questions,
-            'hints_used': player.total_hints_used,
-            'correct_attempts': player.correct_attempts,
-            'total_attempts': player.total_attempts,
-            'accuracy': round((player.correct_attempts / player.total_attempts * 100) if player.total_attempts > 0 else 0)
+            'total_questions': total_questions
         } for player in players[:10]]
     
     async def send_leaderboard(self):

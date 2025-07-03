@@ -423,8 +423,26 @@ async def chrome_devtools_stub(request):
     return JsonResponse({}, status=200)
 
 def leaderboard(request):
-    top_players = PlayerProgress.objects.order_by('-score')[:10]
-    context = {'top_players': top_players}
+    # Get top players sorted by score (primary) and completion time (secondary)
+    top_players = PlayerProgress.objects.filter(
+        finish_time__isnull=False  # Only show players who have completed the game
+    ).order_by('-score', 'total_time_spent')[:10]
+    
+    # Get total number of questions for progress calculation
+    total_questions = Question.objects.filter(is_active=True).count()
+    
+    # Enhance player data with formatted duration
+    for player in top_players:
+        player.duration = str(player.total_time_spent).split('.')[0]  # Format as HH:MM:SS
+        player.completed_count = player.completed_questions.count()  # Store count in a temporary attribute
+        player.total_questions = total_questions
+        if player.current_question:
+            player.last_clue = f'Clue {player.current_question.order}'
+    
+    context = {
+        'top_players': top_players,
+        'total_questions': total_questions
+    }
     return render(request, 'game/leaderboard.html', context)
 
 @login_required
