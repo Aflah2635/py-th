@@ -60,7 +60,7 @@
                     </div>
                     <div class="stat-item">
                         <span class="stat-label">Time Taken</span>
-                        <span class="stat-value">{{ player.duration }}</span>
+                        <span class="stat-value">{% if player.duration != 'In Progress' %}{{ player.duration }}{% else %}In Progress{% endif %}</span>
                     </div>
                     <!-- <div class="stat-item">
                         <span class="stat-label">Clues Solved</span>

@@ -64,6 +64,12 @@ class PlayerProgress(models.Model):
     total_hints_used = models.IntegerField(default=0)
     total_time_spent = models.DurationField(default=timedelta, db_index=True)
 
+    @property
+    def completion_time(self):
+        if self.start_time and self.finish_time:
+            return self.finish_time - self.start_time
+        return None
+
     class Meta:
         indexes = [
             models.Index(fields=['-score', 'total_time_spent'], name='leaderboard_idx')

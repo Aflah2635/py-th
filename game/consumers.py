@@ -39,7 +39,7 @@ class LeaderboardConsumer(AsyncWebsocketConsumer):
             ),
             total_attempts=Count('user__submissionhistory'),
             last_activity=Max('user__activitylog__timestamp'),
-            time_taken=F('finish_time') - F('start_time')
+            time_taken=ExpressionWrapper(F('finish_time') - F('start_time'), output_field=DurationField())
         ).filter(
             Q(finish_time__isnull=False)  # Only show completed players
         ).order_by('-score', 'time_taken')  # Sort by score desc, then time taken asc
@@ -52,7 +52,7 @@ class LeaderboardConsumer(AsyncWebsocketConsumer):
             'username': player.user.username,
             'score': player.score,
             'completed': player.finish_time is not None,
-            'duration': str(player.time_taken).split('.')[0] if player.finish_time else None,
+            'duration': str(player.time_taken).split('.')[0] if player.time_taken else 'In Progress',
             'completed_questions': player.completed_questions.count(),
             'total_questions': total_questions
         } for player in players[:10]]
